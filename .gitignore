@@ -6,5 +6,10 @@ uploads/
 *.db
 naver_cookies.json
 blog_logic.json
+food_logic.json
 settings.json
 .DS_Store
+gdrive_credentials.json
+gdrive_token.json
+*.log
+

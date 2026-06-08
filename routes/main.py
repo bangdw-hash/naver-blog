@@ -8,21 +8,28 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    return render_template("index.html")
+    reuse_id = request.args.get("reuse")
+    reuse_post = None
+    if reuse_id:
+        from services.database import get_post
+        reuse_post = get_post(reuse_id)
+    return render_template("index.html", reuse_post=reuse_post)
 
 @main_bp.route("/settings")
 def settings():
     cfg = {
-        "ANTHROPIC_API_KEY": _mask(os.getenv("ANTHROPIC_API_KEY","")),
-        "OPENAI_API_KEY":    _mask(os.getenv("OPENAI_API_KEY","")),
-        "NAVER_ID":          os.getenv("NAVER_ID",""),
-        "SUPABASE_URL":      os.getenv("SUPABASE_URL",""),
-        "SUPABASE_KEY":      _mask(os.getenv("SUPABASE_KEY","")),
-        "AUTO_POST_TIME":    os.getenv("AUTO_POST_TIME","09:00"),
-        "NAVER_CATEGORY_NO": os.getenv("NAVER_CATEGORY_NO","0"),
-        "NAVER_CATEGORY_NAME":os.getenv("NAVER_CATEGORY_NAME","전체"),
-        "BLOG_CONCEPT":      os.getenv("BLOG_CONCEPT",""),
-        "IMAGE_DIR":         os.getenv("IMAGE_DIR","./uploads/images"),
+        "ANTHROPIC_API_KEY":   _mask(os.getenv("ANTHROPIC_API_KEY","")),
+        "OPENAI_API_KEY":      _mask(os.getenv("OPENAI_API_KEY","")),
+        "NAVER_ID":            os.getenv("NAVER_ID",""),
+        "SUPABASE_URL":        os.getenv("SUPABASE_URL",""),
+        "SUPABASE_KEY":        _mask(os.getenv("SUPABASE_KEY","")),
+        "AUTO_POST_TIME":      os.getenv("AUTO_POST_TIME","09:00"),
+        "NAVER_CATEGORY_NO":   os.getenv("NAVER_CATEGORY_NO","0"),
+        "NAVER_CATEGORY_NAME": os.getenv("NAVER_CATEGORY_NAME","전체"),
+        "BLOG_CONCEPT":        os.getenv("BLOG_CONCEPT",""),
+        "IMAGE_DIR":           os.getenv("IMAGE_DIR","./uploads/images"),
+        "NAVER_CLIENT_ID":     os.getenv("NAVER_CLIENT_ID",""),
+        "NAVER_CLIENT_SECRET": _mask(os.getenv("NAVER_CLIENT_SECRET","")),
     }
     return render_template("settings.html", cfg=cfg)
 
@@ -37,17 +44,19 @@ def save_settings():
             lines = f.readlines()
 
     key_map = {
-        "anthropic_key": "ANTHROPIC_API_KEY",
-        "openai_key":    "OPENAI_API_KEY",
-        "naver_id":      "NAVER_ID",
-        "naver_pw":      "NAVER_PW",
-        "supabase_url":  "SUPABASE_URL",
-        "supabase_key":  "SUPABASE_KEY",
-        "post_time":     "AUTO_POST_TIME",
-        "category_no":   "NAVER_CATEGORY_NO",
-        "category_name": "NAVER_CATEGORY_NAME",
-        "concept":       "BLOG_CONCEPT",
-        "image_dir":     "IMAGE_DIR",
+        "anthropic_key":       "ANTHROPIC_API_KEY",
+        "openai_key":          "OPENAI_API_KEY",
+        "naver_id":            "NAVER_ID",
+        "naver_pw":            "NAVER_PW",
+        "supabase_url":        "SUPABASE_URL",
+        "supabase_key":        "SUPABASE_KEY",
+        "post_time":           "AUTO_POST_TIME",
+        "category_no":         "NAVER_CATEGORY_NO",
+        "category_name":       "NAVER_CATEGORY_NAME",
+        "concept":             "BLOG_CONCEPT",
+        "image_dir":           "IMAGE_DIR",
+        "naver_client_id":     "NAVER_CLIENT_ID",
+        "naver_client_secret": "NAVER_CLIENT_SECRET",
     }
     updates = {key_map[k]: v for k,v in data.items() if k in key_map and v}
 

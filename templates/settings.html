@@ -2,155 +2,403 @@
 {% block title %}설정 - N 블로그 자동화{% endblock %}
 {% block content %}
 
-<h5 class="mb-3"><i class="bi bi-gear me-2"></i>설정</h5>
+<div style="max-width:900px;margin:0 auto;">
 
-<div class="row g-3">
-<div class="col-12 col-lg-6">
-
-  <!-- API 키 -->
-  <div class="card mb-3">
-    <div class="card-header bg-warning text-dark"><strong><i class="bi bi-key me-2"></i>API 키 관리</strong></div>
-    <div class="card-body">
-      <div class="alert alert-info small mb-3">
-        <i class="bi bi-info-circle me-1"></i>모든 키는 서버의 .env 파일에 안전하게 저장됩니다.
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label small fw-bold">Anthropic API 키 (글 생성)</label>
-        <input type="password" id="anthropic_key" class="form-control form-control-sm"
-          value="{{ cfg.ANTHROPIC_API_KEY }}" placeholder="sk-ant-...">
-        <div class="form-text">발급: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label small fw-bold">OpenAI API 키 (이미지 생성 DALL-E 3)</label>
-        <input type="password" id="openai_key" class="form-control form-control-sm"
-          value="{{ cfg.OPENAI_API_KEY }}" placeholder="sk-proj-...">
-        <div class="form-text">발급: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> | 이미지 1장 ≈ $0.04</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label small fw-bold">Supabase URL (웹 이력 DB - 무료)</label>
-        <input type="text" id="supabase_url" class="form-control form-control-sm"
-          value="{{ cfg.SUPABASE_URL }}" placeholder="https://xxxx.supabase.co">
-        <div class="form-text">발급: <a href="https://supabase.com" target="_blank">supabase.com</a> → New Project → Settings → API</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label small fw-bold">Supabase Anon Key</label>
-        <input type="password" id="supabase_key" class="form-control form-control-sm"
-          value="{{ cfg.SUPABASE_KEY }}" placeholder="eyJ...">
-      </div>
-    </div>
+<!-- ══ 페이지 헤더 ════════════════════════════════════════════ -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <div>
+    <h5 style="margin:0;font-size:17px;font-weight:700;">⚙️ 설정</h5>
+    <p style="margin:4px 0 0;font-size:12px;color:var(--text-xs);">모든 설정은 .env 파일에 안전하게 저장됩니다</p>
   </div>
-
-  <!-- 네이버 계정 -->
-  <div class="card mb-3">
-    <div class="card-header bg-success text-white"><strong><i class="bi bi-person me-2"></i>네이버 계정</strong></div>
-    <div class="card-body">
-      <div class="mb-2">
-        <label class="form-label small fw-bold">아이디</label>
-        <input type="text" id="naver_id" class="form-control form-control-sm" value="{{ cfg.NAVER_ID }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label small fw-bold">비밀번호</label>
-        <input type="password" id="naver_pw" class="form-control form-control-sm" placeholder="변경시에만 입력">
-      </div>
-      <div class="row g-2">
-        <div class="col-6">
-          <label class="form-label small fw-bold">카테고리 이름</label>
-          <input type="text" id="category_name" class="form-control form-control-sm" value="{{ cfg.NAVER_CATEGORY_NAME }}">
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-bold">카테고리 번호</label>
-          <input type="text" id="category_no" class="form-control form-control-sm" value="{{ cfg.NAVER_CATEGORY_NO }}">
-          <div class="form-text">URL에서 categoryNo= 확인</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div>
-<div class="col-12 col-lg-6">
-
-  <!-- 자동화 설정 -->
-  <div class="card mb-3">
-    <div class="card-header"><strong><i class="bi bi-clock me-2"></i>자동화 설정</strong></div>
-    <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label small fw-bold">자동 포스팅 시간</label>
-        <input type="time" id="post_time" class="form-control form-control-sm" value="{{ cfg.AUTO_POST_TIME }}">
-      </div>
-      <div class="mb-3">
-        <label class="form-label small fw-bold">블로그 컨셉</label>
-        <textarea id="concept" class="form-control form-control-sm" rows="3">{{ cfg.BLOG_CONCEPT }}</textarea>
-      </div>
-      <div class="mb-3">
-        <label class="form-label small fw-bold">이미지 저장 경로</label>
-        <input type="text" id="image_dir" class="form-control form-control-sm" value="{{ cfg.IMAGE_DIR }}">
-        <div class="form-text">모바일: /storage/emulated/0/Download/blog_images</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 모바일 접속 안내 -->
-  <div class="card mb-3">
-    <div class="card-header bg-dark text-white"><strong><i class="bi bi-phone me-2"></i>모바일 접속 방법</strong></div>
-    <div class="card-body small">
-      <div class="alert alert-secondary py-2 mb-2">
-        <strong>같은 WiFi에서 접속:</strong><br>
-        <code id="mobileUrl">로딩 중...</code>
-        <button class="btn btn-sm btn-light ms-2" onclick="copyMobileUrl()"><i class="bi bi-copy"></i></button>
-      </div>
-      <ol class="mb-0 ps-3">
-        <li>PC와 스마트폰을 <strong>같은 WiFi</strong>에 연결</li>
-        <li>스마트폰 브라우저에서 위 주소 접속</li>
-        <li>이미지 저장 경로를 모바일 폴더로 변경</li>
-      </ol>
-    </div>
-  </div>
-
-  <!-- 저장 버튼 -->
-  <button class="btn btn-success w-100 py-3" onclick="saveSettings()">
-    <i class="bi bi-save me-2"></i>설정 저장
+  <button class="nb-btn nb-btn-primary nb-btn-lg" onclick="saveSettings()">
+    <i class="bi bi-save"></i> 설정 저장
   </button>
+</div>
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="settingsGrid">
+
+<!-- ══ 왼쪽 ═════════════════════════════════════════════════ -->
+<div>
+
+<!-- API 키 -->
+<div class="nb-card">
+  <div class="nb-card-header">
+    <div class="sec-title"><i class="bi bi-key-fill" style="color:var(--warn);font-size:16px;"></i> API 키 관리</div>
+  </div>
+  <div class="nb-card-body">
+    <div class="set-tip">
+      <i class="bi bi-shield-check"></i> 키는 서버 .env 파일에만 저장됩니다
+    </div>
+
+    <div class="set-field">
+      <label class="set-label">Anthropic API 키 <span class="set-badge">글 생성</span></label>
+      <div class="set-input-wrap">
+        <i class="bi bi-robot set-ico"></i>
+        <input type="password" id="anthropic_key" class="set-input" value="{{ cfg.ANTHROPIC_API_KEY }}" placeholder="sk-ant-...">
+        <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
+      </div>
+      <a class="set-link" href="https://console.anthropic.com" target="_blank">발급↗ console.anthropic.com</a>
+    </div>
+
+    <div class="set-field">
+      <label class="set-label">OpenAI API 키 <span class="set-badge">이미지</span></label>
+      <div class="set-input-wrap">
+        <i class="bi bi-image set-ico"></i>
+        <input type="password" id="openai_key" class="set-input" value="{{ cfg.OPENAI_API_KEY }}" placeholder="sk-proj-...">
+        <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
+      </div>
+      <a class="set-link" href="https://platform.openai.com/api-keys" target="_blank">발급↗ platform.openai.com</a>
+    </div>
+
+    <div class="set-field">
+      <label class="set-label">Supabase URL</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-database set-ico"></i>
+        <input type="text" id="supabase_url" class="set-input" value="{{ cfg.SUPABASE_URL }}" placeholder="https://xxx.supabase.co">
+      </div>
+    </div>
+
+    <div class="set-field">
+      <label class="set-label">Supabase Anon Key</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-lock set-ico"></i>
+        <input type="password" id="supabase_key" class="set-input" value="{{ cfg.SUPABASE_KEY }}" placeholder="eyJ...">
+        <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
+      </div>
+      <a class="set-link" href="https://supabase.com/dashboard" target="_blank">관리↗ supabase.com/dashboard</a>
+    </div>
+  </div>
 </div>
+
+<!-- 네이버 계정 -->
+<div class="nb-card">
+  <div class="nb-card-header">
+    <div class="sec-title"><i class="bi bi-person-fill" style="color:#00c471;font-size:16px;"></i> 네이버 계정</div>
+  </div>
+  <div class="nb-card-body">
+    <div class="set-field">
+      <label class="set-label">네이버 아이디</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-person set-ico"></i>
+        <input type="text" id="naver_id" class="set-input" value="{{ cfg.NAVER_ID }}">
+      </div>
+    </div>
+    <div class="set-field">
+      <label class="set-label">네이버 비밀번호 <span style="font-weight:400;color:var(--text-xs);">(변경시만)</span></label>
+      <div class="set-input-wrap">
+        <i class="bi bi-lock set-ico"></i>
+        <input type="password" id="naver_pw" class="set-input" placeholder="변경시에만 입력">
+        <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="set-field" style="margin-bottom:0;">
+        <label class="set-label">카테고리 이름</label>
+        <div class="set-input-wrap">
+          <i class="bi bi-tag set-ico"></i>
+          <input type="text" id="category_name" class="set-input" value="{{ cfg.NAVER_CATEGORY_NAME }}">
+        </div>
+      </div>
+      <div class="set-field" style="margin-bottom:0;">
+        <label class="set-label">카테고리 번호</label>
+        <div class="set-input-wrap">
+          <i class="bi bi-hash set-ico"></i>
+          <input type="text" id="category_no" class="set-input" value="{{ cfg.NAVER_CATEGORY_NO }}">
+        </div>
+        <span class="set-link">URL에서 categoryNo= 확인</span>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- 네이버 지역검색 API -->
+<div class="nb-card">
+  <div class="nb-card-header">
+    <div class="sec-title"><i class="bi bi-geo-alt-fill" style="color:#00c471;font-size:16px;"></i> 네이버 지역검색 API <span class="set-badge" style="background:#f0fdf4;color:#16a34a;">맛집 탭</span></div>
+  </div>
+  <div class="nb-card-body">
+    <div class="set-tip">
+      <i class="bi bi-info-circle"></i>
+      <a href="https://developers.naver.com/apps/#/register" target="_blank" style="color:inherit;font-weight:600;">developers.naver.com</a>
+      → 앱 등록 → 검색 API → 지역 선택
+    </div>
+    <div class="set-field">
+      <label class="set-label">Client ID</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-fingerprint set-ico"></i>
+        <input type="text" id="naver_client_id" class="set-input" value="{{ cfg.get('NAVER_CLIENT_ID','') }}" placeholder="발급 후 입력">
+      </div>
+    </div>
+    <div class="set-field">
+      <label class="set-label">Client Secret</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-lock set-ico"></i>
+        <input type="password" id="naver_client_secret" class="set-input" value="{{ cfg.get('NAVER_CLIENT_SECRET','') }}" placeholder="••••••••">
+        <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /왼쪽 -->
+
+<!-- ══ 오른쪽 ════════════════════════════════════════════════ -->
+<div>
+
+<!-- 자동화 설정 -->
+<div class="nb-card">
+  <div class="nb-card-header">
+    <div class="sec-title"><i class="bi bi-gear-fill" style="font-size:16px;"></i> 자동화 설정</div>
+  </div>
+  <div class="nb-card-body">
+    <div class="set-field">
+      <label class="set-label">블로그 컨셉</label>
+      <textarea id="concept" class="nb-textarea" rows="2" style="font-size:13px;">{{ cfg.BLOG_CONCEPT }}</textarea>
+    </div>
+    <div class="set-field">
+      <label class="set-label">자동 포스팅 시간</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-clock set-ico"></i>
+        <input type="time" id="post_time" class="set-input" value="{{ cfg.AUTO_POST_TIME }}">
+      </div>
+    </div>
+    <div class="set-field">
+      <label class="set-label">이미지 저장 경로</label>
+      <div style="display:flex;gap:8px;">
+        <div class="set-input-wrap" style="flex:1;margin-bottom:0;">
+          <i class="bi bi-folder set-ico"></i>
+          <input type="text" id="image_dir" class="set-input" value="{{ cfg.IMAGE_DIR }}" placeholder="./uploads/images">
+        </div>
+        <label class="nb-btn nb-btn-outline nb-btn-sm" style="cursor:pointer;white-space:nowrap;" title="폴더 선택">
+          <i class="bi bi-folder2-open"></i>
+          <input type="file" webkitdirectory hidden onchange="pickFolder(this,'image_dir')">
+        </label>
+      </div>
+    </div>
+    <div class="set-field">
+      <label class="set-label">맛집 사진 저장 경로</label>
+      <div style="display:flex;gap:8px;">
+        <div class="set-input-wrap" style="flex:1;margin-bottom:0;">
+          <i class="bi bi-camera set-ico"></i>
+          <input type="text" id="food_photo_dir" class="set-input" value="./uploads/food" placeholder="./uploads/food">
+        </div>
+        <label class="nb-btn nb-btn-outline nb-btn-sm" style="cursor:pointer;white-space:nowrap;">
+          <i class="bi bi-folder2-open"></i>
+          <input type="file" webkitdirectory hidden onchange="pickFolder(this,'food_photo_dir')">
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Google Drive -->
+<div class="nb-card">
+  <div class="nb-card-header">
+    <div class="sec-title"><i class="bi bi-google" style="color:#4285f4;font-size:16px;"></i> Google Drive 연동 <span class="set-badge" style="background:#eff6ff;color:#4285f4;">선택</span></div>
+  </div>
+  <div class="nb-card-body">
+    <div id="gdriveStatus" class="logic-pill warn" style="margin-bottom:12px;">
+      <i class="bi bi-exclamation-circle"></i> 연결 안 됨
+    </div>
+    <div class="set-field">
+      <label class="set-label">Google Drive 폴더 경로 (선택)</label>
+      <div class="set-input-wrap">
+        <i class="bi bi-folder2 set-ico"></i>
+        <input type="text" id="gdrive_folder" class="set-input" placeholder="NaverBlog-FoodPhotos (비워두면 자동 생성)">
+      </div>
+      <span class="set-link">비워두면 "NaverBlog-FoodPhotos" 폴더 자동 생성</span>
+    </div>
+    <div class="set-field">
+      <label class="set-label">credentials.json 경로</label>
+      <div style="display:flex;gap:8px;">
+        <div class="set-input-wrap" style="flex:1;margin-bottom:0;">
+          <i class="bi bi-file-earmark-code set-ico"></i>
+          <input type="text" id="gdrive_creds" class="set-input" value="data/gdrive_credentials.json" placeholder="data/gdrive_credentials.json">
+        </div>
+        <label class="nb-btn nb-btn-outline nb-btn-sm" style="cursor:pointer;white-space:nowrap;">
+          <i class="bi bi-upload"></i>
+          <input type="file" accept=".json" hidden onchange="uploadCredentials(this)">
+        </label>
+      </div>
+      <a class="set-link" href="https://console.cloud.google.com/apis/credentials" target="_blank">발급↗ Google Cloud Console → OAuth 2.0 클라이언트 ID</a>
+    </div>
+    <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="connectGDrive()">
+      <i class="bi bi-google"></i> Google 계정 연결 (OAuth)
+    </button>
+  </div>
+</div>
+
+<!-- 모바일 접속 안내 -->
+<div class="nb-card">
+  <div class="nb-card-header">
+    <div class="sec-title"><i class="bi bi-phone-fill" style="font-size:16px;"></i> 모바일 접속</div>
+  </div>
+  <div class="nb-card-body">
+    <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-xs);margin-bottom:6px;">같은 WiFi에서 스마트폰으로 접속</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <code id="mobileUrl" style="font-size:14px;font-weight:700;color:var(--primary);">로딩 중...</code>
+        <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="copyMobileUrl()"><i class="bi bi-copy"></i></button>
+      </div>
+    </div>
+    <ol style="font-size:12.5px;color:var(--text-s);padding-left:18px;margin:0;line-height:2;">
+      <li>PC와 스마트폰을 <strong>같은 WiFi</strong>에 연결</li>
+      <li>스마트폰 브라우저에서 위 주소 접속</li>
+      <li>카메라/클립보드 권한 → <strong>항상 허용</strong></li>
+    </ol>
+  </div>
+</div>
+
+</div><!-- /오른쪽 -->
+</div><!-- /grid -->
+
+<!-- ══ 동기화 섹션 ══════════════════════════════════════════════ -->
+<div class="sync-box">
+  <div class="sync-box-title">
+    <i class="bi bi-arrow-repeat" style="font-size:18px;"></i>
+    크로스 디바이스 동기화
+    <span style="margin-left:auto;font-size:11px;font-weight:400;color:#0369a1;">자동: 5분마다 백그라운드 실행</span>
+  </div>
+  <div id="syncStatus" class="logic-pill warn" style="margin-bottom:14px;">
+    <i class="bi bi-clock"></i> 로딩 중...
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+    <button class="nb-btn nb-btn-outline" onclick="runSync('pull')" style="flex-direction:column;padding:12px 8px;gap:4px;">
+      <i class="bi bi-cloud-download" style="font-size:20px;color:#0369a1;"></i>
+      <span style="font-size:12px;text-align:center;">클라우드→로컬<br>불러오기</span>
+    </button>
+    <button class="nb-btn nb-btn-outline" onclick="runSync('push')" style="flex-direction:column;padding:12px 8px;gap:4px;">
+      <i class="bi bi-cloud-upload" style="font-size:20px;color:#0369a1;"></i>
+      <span style="font-size:12px;text-align:center;">로컬→클라우드<br>올리기</span>
+    </button>
+    <button class="nb-btn nb-btn-primary" onclick="runSync('both')" style="flex-direction:column;padding:12px 8px;gap:4px;">
+      <i class="bi bi-arrow-repeat" style="font-size:20px;"></i>
+      <span style="font-size:12px;text-align:center;">양방향<br>전체 동기화</span>
+    </button>
+  </div>
+</div>
+
+</div><!-- /max-width -->
+
+<style>
+/* ── 설정 전용 스타일 ──────────────────────────────────────── */
+.set-field { margin-bottom: 16px; }
+.set-label {
+  font-size: 12px; font-weight: 600; color: var(--text-s);
+  margin-bottom: 5px; display: flex; align-items: center; gap: 6px;
+}
+.set-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 7px;
+  border-radius: 20px; background: #fffbeb; color: #92400e;
+}
+.set-input-wrap {
+  position: relative; display: flex; align-items: center;
+  border: 1.5px solid var(--border); border-radius: 9px;
+  background: var(--surface); transition: border-color .15s;
+  overflow: hidden;
+}
+.set-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-s); }
+.set-ico {
+  padding: 0 10px; color: var(--text-xs); font-size: 15px;
+  flex-shrink: 0;
+}
+.set-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 13px; color: var(--text); padding: 9px 4px 9px 0;
+  font-family: inherit;
+}
+.set-eye {
+  background: none; border: none; padding: 0 10px; cursor: pointer;
+  color: var(--text-xs); font-size: 14px;
+}
+.set-eye:hover { color: var(--text); }
+.set-link { font-size: 11.5px; color: var(--accent); margin-top: 4px; display: inline-block; }
+.set-tip {
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+  padding: 9px 12px; font-size: 12px; color: #1e40af;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 7px;
+}
+@media(max-width:700px) {
+  #settingsGrid { grid-template-columns: 1fr !important; }
+}
+</style>
 
 {% endblock %}
 {% block scripts %}
 <script>
-// 모바일 URL 표시
-fetch('/api/stats').then(()=>{
+document.addEventListener('DOMContentLoaded', () => {
   const url = `http://${location.hostname}:${location.port||5000}`;
   document.getElementById('mobileUrl').textContent = url;
+  loadSyncStatus();
+
+  fetch('/api/gdrive-status').then(r=>r.json()).then(d => {
+    const el = document.getElementById('gdriveStatus');
+    if (el && d.connected) {
+      el.className = 'logic-pill ok';
+      el.innerHTML = '<i class="bi bi-check-circle-fill"></i> Google Drive 연결됨';
+    }
+  }).catch(()=>{});
 });
-function copyMobileUrl(){
-  const url = document.getElementById('mobileUrl').textContent;
-  navigator.clipboard.writeText(url);
-  showToast('URL 복사됨!');
+
+function togglePw(btn) {
+  const inp = btn.closest('.set-input-wrap').querySelector('input');
+  const ico = btn.querySelector('i');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.className = 'bi bi-eye-slash';
+  } else {
+    inp.type = 'password';
+    ico.className = 'bi bi-eye';
+  }
 }
 
-async function saveSettings(){
+function pickFolder(input, targetId) {
+  if (input.files && input.files.length > 0) {
+    const relPath = input.files[0].webkitRelativePath || input.files[0].name;
+    const folder  = './' + relPath.split('/')[0];
+    const el = document.getElementById(targetId);
+    if (el) { el.value = folder; showToast('폴더 선택: ' + folder); }
+  }
+}
+
+async function uploadCredentials(input) {
+  if (!input.files[0]) return;
+  const fd = new FormData(); fd.append('file', input.files[0]);
+  const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  document.getElementById('gdrive_creds').value = data.path || 'data/gdrive_credentials.json';
+  showToast('credentials.json 업로드 완료!');
+}
+
+function copyMobileUrl() {
+  const url = document.getElementById('mobileUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => showToast('URL 복사됨!'));
+}
+
+async function saveSettings() {
+  const btn = event.target.closest('button');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 저장 중...'; }
   const data = {
-    anthropic_key: document.getElementById('anthropic_key').value,
-    openai_key:    document.getElementById('openai_key').value,
-    naver_id:      document.getElementById('naver_id').value,
-    naver_pw:      document.getElementById('naver_pw').value,
-    supabase_url:  document.getElementById('supabase_url').value,
-    supabase_key:  document.getElementById('supabase_key').value,
-    post_time:     document.getElementById('post_time').value,
-    concept:       document.getElementById('concept').value,
-    category_no:   document.getElementById('category_no').value,
-    category_name: document.getElementById('category_name').value,
-    image_dir:     document.getElementById('image_dir').value,
+    anthropic_key:       document.getElementById('anthropic_key').value,
+    openai_key:          document.getElementById('openai_key').value,
+    naver_id:            document.getElementById('naver_id').value,
+    naver_pw:            document.getElementById('naver_pw').value,
+    supabase_url:        document.getElementById('supabase_url').value,
+    supabase_key:        document.getElementById('supabase_key').value,
+    post_time:           document.getElementById('post_time').value,
+    concept:             document.getElementById('concept').value,
+    category_no:         document.getElementById('category_no').value,
+    category_name:       document.getElementById('category_name').value,
+    image_dir:           document.getElementById('image_dir').value,
+    naver_client_id:     document.getElementById('naver_client_id').value,
+    naver_client_secret: document.getElementById('naver_client_secret').value,
   };
-  const res = await fetch('/settings/save',{
+  const res = await fetch('/settings/save', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(data)
   });
-  if(res.ok){ showToast('설정 저장됨!'); }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save"></i> 설정 저장'; }
+  if (res.ok) showToast('설정 저장 완료!');
 }
 </script>
 {% endblock %}

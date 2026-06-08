@@ -2,48 +2,69 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- 카메라/마이크 권한 정책 -->
+<meta http-equiv="Permissions-Policy" content="camera=*, microphone=(), clipboard-read=*, clipboard-write=*">
 <title>{% block title %}N 블로그 자동화{% endblock %}</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <link href="/static/css/app.css" rel="stylesheet">
 </head>
 <body>
 
 <!-- 네비게이션 -->
-<nav class="navbar navbar-dark sticky-top" style="background:#03C75A;">
-  <div class="container-fluid">
-    <a class="navbar-brand fw-bold" href="/"><i class="bi bi-pencil-square me-1"></i>N 블로그 자동화</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navMenu">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link {% if request.path=='/' %}active{% endif %}" href="/"><i class="bi bi-house me-1"></i>글 생성</a></li>
-        <li class="nav-item"><a class="nav-link {% if '/history' in request.path %}active{% endif %}" href="/history"><i class="bi bi-clock-history me-1"></i>글 관리</a></li>
-        <li class="nav-item"><a class="nav-link {% if '/settings' in request.path %}active{% endif %}" href="/settings"><i class="bi bi-gear me-1"></i>설정</a></li>
-      </ul>
-    </div>
-  </div>
+<nav class="nb-nav">
+  <a class="brand" href="/">
+    <div class="logo"><i class="bi bi-pencil-fill"></i></div>
+    <span>N 블로그 자동화</span>
+  </a>
+  <a class="nav-link {% if request.path=='/' %}active{% endif %}" href="/">
+    <i class="bi bi-pencil-square"></i><span class="nav-label">글 생성</span>
+  </a>
+  <a class="nav-link {% if '/history' in request.path %}active{% endif %}" href="/history">
+    <i class="bi bi-clock-history"></i><span class="nav-label">글 관리</span>
+  </a>
+  <a class="nav-link {% if '/settings' in request.path %}active{% endif %}" href="/settings">
+    <i class="bi bi-gear"></i><span class="nav-label">설정</span>
+  </a>
 </nav>
 
-<!-- 메인 컨텐츠 -->
-<div class="container-fluid px-3 py-3">
+<!-- 메인 -->
+<div class="page-wrap">
   {% block content %}{% endblock %}
 </div>
 
-<!-- 진행상황 토스트 -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-  <div id="progressToast" class="toast align-items-center text-bg-dark" role="alert">
-    <div class="d-flex">
-      <div class="toast-body" id="toastMsg">처리 중...</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  </div>
-</div>
+<!-- 토스트 -->
+<div class="toast-wrap" id="toastWrap"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/app.js"></script>
+<script src="/static/js/food_tab.js"></script>
 {% block scripts %}{% endblock %}
+<script>
+// ── 브라우저 권한 선제 요청 (앱 시작 시 한 번) ───────────────
+(async function requestPermissions() {
+  // 클립보드 읽기 권한 (모바일 클립보드 붙여넣기용)
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: 'clipboard-read' }).catch(() => {});
+    navigator.permissions.query({ name: 'clipboard-write' }).catch(() => {});
+  }
+  // 저장된 권한 상태 확인 — 이미 허용된 경우 재요청 안 함
+  const permKey = 'nb_perms_requested';
+  if (sessionStorage.getItem(permKey)) return;
+  sessionStorage.setItem(permKey, '1');
+
+  // 알림 권한 (선택적 — 백그라운드 작업 완료 알림)
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+})();
+
+// ── 서비스 워커 등록 (오프라인 캐시 — 선택) ─────────────────
+// if ('serviceWorker' in navigator) {
+//   navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+// }
+</script>
 </body>
 </html>

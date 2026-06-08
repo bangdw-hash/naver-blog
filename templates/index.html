@@ -2,236 +2,504 @@
 {% block title %}글 생성 - N 블로그 자동화{% endblock %}
 {% block content %}
 
-<div class="row g-3">
-<!-- ── 왼쪽: 입력 패널 ── -->
-<div class="col-12 col-lg-5">
+<!-- ══ 탭 바 ══════════════════════════════════════════════════ -->
+<div class="tab-bar" id="tabBar">
+  <div id="tabList" style="display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;"></div>
+  <div style="display:flex;gap:6px;flex-shrink:0;position:relative;" id="addTabMenu">
+    <button class="nb-btn nb-btn-primary nb-btn-sm" onclick="addTab()" title="일반 블로그 탭 추가">
+      <i class="bi bi-plus-lg"></i> 글 추가
+    </button>
+    <button class="nb-btn nb-btn-warn nb-btn-sm" onclick="addFoodTab()" title="맛집 탐방 탭 추가">
+      <i class="bi bi-shop"></i> 맛집 탭
+    </button>
+  </div>
+</div>
 
-  <!-- ① 자료 입력 -->
-  <div class="card mb-3">
-    <div class="card-header d-flex align-items-center">
-      <span class="badge bg-success me-2">①</span>
-      <strong>자료 입력</strong>
+<!-- ══ 탭 컨텐츠 컨테이너 ══════════════════════════════════════ -->
+<div id="tabContents"></div>
+
+<!-- ══ 탭 템플릿 (숨김) ══════════════════════════════════════ -->
+<template id="tabTemplate">
+<div class="tab-content" data-tab-id="">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="gen-grid">
+
+  <!-- 왼쪽 패널 -->
+  <div>
+    <!-- ① 자료 입력 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num">1</span><span>자료 입력</span></div>
+      </div>
+      <div class="nb-card-body">
+        <textarea class="nb-textarea raw-input" rows="7"
+          placeholder="텍스트, 유튜브 URL, 나의 생각을 자유롭게 입력하세요&#10;&#10;· https://youtube.com/watch?v=xxx&#10;· 오늘 강의에서 인상깊었던 내용..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <label class="nb-btn nb-btn-outline nb-btn-sm" style="cursor:pointer;">
+            <i class="bi bi-file-earmark-pdf"></i> PDF/파일
+            <input type="file" class="file-input" accept=".pdf,.txt,.md" multiple hidden>
+          </label>
+          <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="pasteClip(this)">
+            <i class="bi bi-clipboard"></i> 클립보드
+          </button>
+          <button class="nb-btn nb-btn-danger nb-btn-sm" onclick="clearTab(this)">
+            <i class="bi bi-trash"></i> 초기화
+          </button>
+        </div>
+        <div class="attach-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
     </div>
-    <div class="card-body">
-      <textarea id="rawInput" class="form-control mb-2" rows="6"
-        placeholder="텍스트, 유튜브 URL, 나의 생각 등을 자유롭게 입력하세요&#10;&#10;예시:&#10;- https://youtube.com/watch?v=xxx&#10;- 오늘 강의에서 인상깊었던 내용: ...&#10;- 학부모들이 많이 묻는 질문: ..."></textarea>
 
-      <!-- 파일 첨부 -->
-      <div class="d-flex flex-wrap gap-2 mb-2">
-        <label class="btn btn-sm btn-outline-secondary">
-          <i class="bi bi-file-earmark-pdf me-1"></i>PDF/파일
-          <input type="file" id="fileInput" accept=".pdf,.txt,.md" multiple hidden>
+    <!-- ② 생성 설정 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num">2</span><span>생성 설정</span></div>
+        <button class="nb-btn nb-btn-warn nb-btn-sm" onclick="updateLogic()">
+          <i class="bi bi-arrow-clockwise"></i> 로직 최신화
+        </button>
+      </div>
+      <div class="nb-card-body">
+        <div style="margin-bottom:14px;">
+          <div id="logicStatus" class="logic-pill warn">
+            <i class="bi bi-clock"></i> 로딩 중...
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="nb-label">어투</label>
+          <div class="tone-group">
+            <div class="tone-opt"><input type="radio" name="tone-__TAB__" value="전문적"><label><i class="bi bi-briefcase"></i>전문적</label></div>
+            <div class="tone-opt"><input type="radio" name="tone-__TAB__" value="친근하게" checked><label><i class="bi bi-emoji-smile"></i>친근하게</label></div>
+            <div class="tone-opt"><input type="radio" name="tone-__TAB__" value="감성적"><label><i class="bi bi-heart"></i>감성적</label></div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="nb-label">이미지 수</label>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="range" class="nb-range img-count-range" min="3" max="10" value="5" style="flex:1;"
+              oninput="this.closest('.nb-card-body').querySelector('.count-badge').textContent=this.value+'장'">
+            <span class="count-badge">5장</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <label class="nb-check">
+            <input type="checkbox" class="incl-yt" checked>
+            <span class="nb-check-box"></span>
+            <span class="nb-check-label">유튜브 링크 자동 삽입</span>
+          </label>
+          <label class="nb-check">
+            <input type="checkbox" class="incl-map">
+            <span class="nb-check-box"></span>
+            <span class="nb-check-label">지도/위치 포함</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 오른쪽 패널 -->
+  <div>
+    <!-- ③ 글 생성 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num">3</span><span>글 생성 &amp; 미리보기</span></div>
+      </div>
+      <div class="nb-card-body">
+        <button class="nb-btn nb-btn-primary nb-btn-full nb-btn-lg gen-btn" onclick="generateContent(this)" style="margin-bottom:12px;">
+          <i class="bi bi-robot"></i> AI 글 생성
+        </button>
+        <div class="nb-prog gen-progress" style="display:none;margin-bottom:8px;"><div class="nb-prog-bar"></div></div>
+        <div class="gen-status nb-status" style="margin-bottom:14px;"></div>
+
+        <label class="nb-label">제목</label>
+        <input type="text" class="nb-input post-title" placeholder="AI 생성 후 표시됩니다" style="margin-bottom:12px;">
+
+        <label class="nb-label">본문 <span style="font-weight:400;color:var(--text-xs);">(직접 편집 가능)</span></label>
+        <textarea class="nb-textarea post-content" rows="10"
+          placeholder="← AI 글 생성 버튼을 눌러주세요" style="margin-bottom:12px;"></textarea>
+
+        <label class="nb-label">태그</label>
+        <input type="text" class="nb-input post-tags" placeholder="태그1, 태그2, ..." style="margin-bottom:14px;">
+
+        <div class="supp-box" style="margin-bottom:14px;">
+          <div class="supp-label"><i class="bi bi-pencil"></i> 보완 요청 내용</div>
+          <textarea class="nb-textarea supplement-input" rows="2"
+            placeholder="예: 도입부를 더 감성적으로 / 실제 사례 2개 추가 / 3번 항목 더 자세히"></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button class="nb-btn nb-btn-warn nb-btn-full regen-btn" onclick="regenerateContent(this)" disabled>
+            <i class="bi bi-arrow-counterclockwise"></i> 보완 반영 재생성
+          </button>
+          <button class="nb-btn nb-btn-accent nb-btn-full confirm-btn" onclick="confirmContent(this)" disabled>
+            <i class="bi bi-check-circle"></i> 확정
+          </button>
+        </div>
+
+        <input type="hidden" class="post-id-hidden" value="">
+        <input type="hidden" class="main-keyword-hidden" value="">
+      </div>
+    </div>
+
+    <!-- ④ 이미지 생성 -->
+    <div class="nb-card sec-locked img-section">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num b">4</span><span>이미지 생성 (DALL-E)</span></div>
+      </div>
+      <div class="nb-card-body">
+        <label class="nb-label">저장 경로</label>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <input type="text" class="nb-input img-save-path" value="./uploads/images" style="flex:1;">
+          <button class="nb-btn nb-btn-outline nb-btn-sm"><i class="bi bi-folder2"></i></button>
+        </div>
+        <button class="nb-btn nb-btn-accent nb-btn-full" onclick="generateImagesTab(this)" style="margin-bottom:10px;">
+          <i class="bi bi-image"></i> 이미지 생성 시작
+        </button>
+        <div class="nb-prog img-progress" style="display:none;margin-bottom:8px;"><div class="nb-prog-bar"></div></div>
+        <div class="img-status nb-status" style="margin-bottom:10px;"></div>
+        <div class="img-thumbnails" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+    </div>
+
+    <!-- ⑤ 저장 & 포스팅 -->
+    <div class="nb-card sec-locked export-section">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num d">5</span><span>저장 &amp; 포스팅</span></div>
+      </div>
+      <div class="nb-card-body">
+        <label class="nb-label">저장 폴더</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input type="text" class="nb-input export-path" value="./uploads" style="flex:1;">
+          <label class="nb-btn nb-btn-outline nb-btn-sm" style="cursor:pointer;">
+            <i class="bi bi-folder2-open"></i>
+            <input type="file" webkitdirectory hidden onchange="setFolderPath(this)">
+          </label>
+        </div>
+        <label class="nb-label">저장 형식</label>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <label class="nb-check" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;justify-content:center;">
+            <input type="radio" name="fmt-__TAB__" value="txt" checked>
+            <span class="nb-check-box" style="border-radius:50%;"></span>
+            <span class="nb-check-label"><i class="bi bi-file-text me-1"></i>TXT</span>
+          </label>
+          <label class="nb-check" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;justify-content:center;">
+            <input type="radio" name="fmt-__TAB__" value="html">
+            <span class="nb-check-box" style="border-radius:50%;"></span>
+            <span class="nb-check-label"><i class="bi bi-file-code me-1"></i>HTML</span>
+          </label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <button class="nb-btn nb-btn-dark nb-btn-full" onclick="saveToFolderTab(this)">
+            <i class="bi bi-folder-check"></i> 저장소 저장
+          </button>
+          <button class="nb-btn nb-btn-outline nb-btn-full" onclick="downloadTxtTab(this)">
+            <i class="bi bi-download"></i> 다운로드
+          </button>
+        </div>
+        <button class="nb-btn nb-btn-danger nb-btn-full" onclick="postToNaverTab(this)" style="margin-bottom:6px;">
+          <i class="bi bi-send"></i> 네이버 블로그 포스팅
+        </button>
+        <div class="post-status nb-status" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+  </div><!-- /오른쪽 -->
+  </div><!-- /gen-grid -->
+</div><!-- /tab-content -->
+</template>
+
+<!-- ══ 맛집 탭 템플릿 ═══════════════════════════════════════ -->
+<template id="foodTabTemplate">
+<div class="food-tab-content tab-content" data-tab-id="">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="gen-grid">
+
+  <!-- 왼쪽 -->
+  <div>
+    <!-- ① 음식점 검색 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num" style="background:#f59e0b;">1</span><span>음식점 검색</span></div>
+      </div>
+      <div class="nb-card-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" class="nb-input place-query" placeholder="음식점 이름 검색... (예: 홍길동 칼국수)" style="flex:1;">
+          <button class="nb-btn nb-btn-warn nb-btn-sm" onclick="searchPlace(this)" style="white-space:nowrap;">
+            <i class="bi bi-search"></i> 검색
+          </button>
+        </div>
+        <div class="place-results" style="max-height:220px;overflow-y:auto;"></div>
+
+        <!-- 선택된 장소 -->
+        <div class="place-selected-box" style="display:none;margin-top:12px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 14px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+            <i class="bi bi-pin-map-fill" style="color:#f59e0b;"></i>
+            <span class="selected-name">-</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-s);display:flex;flex-direction:column;gap:3px;">
+            <span><i class="bi bi-geo-alt"></i> <span class="selected-addr">-</span></span>
+            <span><i class="bi bi-telephone"></i> <span class="selected-tel">-</span></span>
+            <span><i class="bi bi-tag"></i> <span class="selected-cat">-</span></span>
+          </div>
+          <a class="selected-link map-link" href="#" target="_blank" style="display:none;margin-top:8px;font-size:12px;color:var(--accent);">
+            <i class="bi bi-map"></i> 네이버 지도에서 보기↗
+          </a>
+        </div>
+
+        <!-- hidden inputs -->
+        <input type="hidden" class="inp-place-name">
+        <input type="hidden" class="inp-place-addr">
+        <input type="hidden" class="inp-place-road">
+        <input type="hidden" class="inp-place-link">
+        <input type="hidden" class="inp-place-tel">
+        <input type="hidden" class="inp-place-cat">
+        <input type="hidden" class="inp-mapx">
+        <input type="hidden" class="inp-mapy">
+      </div>
+    </div>
+
+    <!-- ② 방문 메모 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num" style="background:#f59e0b;">2</span><span>방문 메모</span></div>
+      </div>
+      <div class="nb-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label class="nb-label">방문일</label>
+            <input type="date" class="nb-input inp-visit-date" style="padding:8px 10px;">
+          </div>
+          <div>
+            <label class="nb-label">동반 인원</label>
+            <select class="nb-input inp-party-size" style="padding:8px 10px;">
+              <option value="1">1명 (혼밥)</option>
+              <option value="2" selected>2명</option>
+              <option value="3">3명</option>
+              <option value="4">4명</option>
+              <option value="5+">5명 이상</option>
+            </select>
+          </div>
+          <div>
+            <label class="nb-label">가격대</label>
+            <select class="nb-input inp-price-range" style="padding:8px 10px;">
+              <option>1만원 미만</option>
+              <option>1-2만원</option>
+              <option selected>2-3만원</option>
+              <option>3-5만원</option>
+              <option>5만원 이상</option>
+            </select>
+          </div>
+          <div>
+            <label class="nb-label">재방문 의향</label>
+            <select class="nb-input inp-revisit" style="padding:8px 10px;">
+              <option value="반드시">반드시 또 갈 것</option>
+              <option value="예" selected>또 가고 싶다</option>
+              <option value="보통">보통</option>
+              <option value="아니오">아닐 것 같다</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="nb-label">맛 평점</label>
+        <div class="star-group" data-type="taste" style="display:flex;gap:4px;margin-bottom:12px;">
+          <span class="star" style="font-size:24px;cursor:pointer;color:#e5e7eb;">★</span>
+          <span class="star" style="font-size:24px;cursor:pointer;color:#e5e7eb;">★</span>
+          <span class="star active" style="font-size:24px;cursor:pointer;color:#f59e0b;">★</span>
+          <span class="star active" style="font-size:24px;cursor:pointer;color:#f59e0b;">★</span>
+          <span class="star active" style="font-size:24px;cursor:pointer;color:#f59e0b;">★</span>
+        </div>
+        <input type="hidden" class="inp-rating-taste" value="3">
+
+        <label class="nb-label">분위기</label>
+        <div class="star-group" data-type="mood" style="display:flex;gap:4px;margin-bottom:12px;">
+          <span class="star" style="font-size:24px;cursor:pointer;color:#e5e7eb;">★</span>
+          <span class="star" style="font-size:24px;cursor:pointer;color:#e5e7eb;">★</span>
+          <span class="star active" style="font-size:24px;cursor:pointer;color:#f59e0b;">★</span>
+          <span class="star active" style="font-size:24px;cursor:pointer;color:#f59e0b;">★</span>
+          <span class="star active" style="font-size:24px;cursor:pointer;color:#f59e0b;">★</span>
+        </div>
+        <input type="hidden" class="inp-rating-mood" value="3">
+
+        <label class="nb-label">메모 (자유롭게)</label>
+        <textarea class="nb-textarea inp-memo" rows="3"
+          placeholder="맛있었던 메뉴, 특이한 점, 서비스 등 자유롭게..."></textarea>
+        <input type="hidden" class="inp-photos" value="[]">
+      </div>
+    </div>
+  </div>
+
+  <!-- 오른쪽 -->
+  <div>
+    <!-- ③ AI 글 생성 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num" style="background:#f59e0b;">3</span><span>AI 맛집 글 생성</span></div>
+        <button class="nb-btn nb-btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;" onclick="updateFoodLogic(this)">
+          <i class="bi bi-arrow-clockwise"></i> 맛집 로직 최신화
+        </button>
+      </div>
+      <div class="nb-card-body">
+        <div class="food-logic-status logic-pill warn" style="margin-bottom:10px;">
+          <i class="bi bi-clock"></i> 로딩 중...
+        </div>
+        <button class="nb-btn nb-btn-full nb-btn-lg" style="background:#f59e0b;color:#fff;margin-bottom:12px;" onclick="generateFoodContent(this)">
+          <i class="bi bi-robot"></i> AI 맛집 글 자동 생성
+        </button>
+        <div class="nb-prog food-gen-progress" style="display:none;margin-bottom:8px;"><div class="nb-prog-bar"></div></div>
+        <div class="food-gen-status nb-status" style="margin-bottom:14px;"></div>
+
+        <label class="nb-label">제목</label>
+        <input type="text" class="nb-input food-title" placeholder="AI 생성 후 표시됩니다" style="margin-bottom:12px;">
+
+        <label class="nb-label">본문 <span style="font-weight:400;color:var(--text-xs);">(직접 편집 가능)</span></label>
+        <textarea class="nb-textarea food-content" rows="9"
+          placeholder="← AI 글 생성 버튼을 눌러주세요" style="margin-bottom:12px;"></textarea>
+
+        <label class="nb-label">태그</label>
+        <input type="text" class="nb-input food-tags" placeholder="태그1, 태그2, ..." style="margin-bottom:8px;">
+        <input type="hidden" class="food-post-id">
+      </div>
+    </div>
+
+    <!-- ④ 사진 관리 -->
+    <div class="nb-card">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num" style="background:#f59e0b;">4</span><span>사진 관리</span></div>
+        <div style="display:flex;gap:6px;">
+          <select class="nb-input photo-storage-sel" style="font-size:12px;padding:5px 8px;width:auto;" onchange="toggleGdrivePath(this)">
+            <option value="supabase">Supabase</option>
+            <option value="gdrive">Google Drive</option>
+            <option value="both">둘 다</option>
+          </select>
+        </div>
+      </div>
+      <div class="nb-card-body">
+        <!-- Google Drive 폴더 경로 (gdrive/both 선택 시 표시) -->
+        <div class="gdrive-path-row" style="display:none;margin-bottom:10px;">
+          <label class="nb-label" style="margin-bottom:4px;"><i class="bi bi-google" style="color:#4285f4;"></i> Google Drive 저장 경로</label>
+          <div style="display:flex;gap:6px;">
+            <input type="text" class="nb-input gdrive-folder-path" placeholder="NaverBlog-FoodPhotos (비워두면 자동)" style="flex:1;font-size:12px;padding:6px 10px;">
+            <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="applyGdrivePath(this)" title="경로 적용">
+              <i class="bi bi-check-lg"></i>
+            </button>
+          </div>
+          <span style="font-size:11px;color:var(--text-xs);">설정에서 Google Drive 연결 후 사용 가능</span>
+        </div>
+        <label class="nb-btn nb-btn-warn nb-btn-sm nb-btn-full" style="cursor:pointer;margin-bottom:10px;">
+          <i class="bi bi-camera"></i> 사진 추가 (다중 선택 가능)
+          <input type="file" class="food-photo-input" accept="image/*" multiple hidden>
         </label>
-        <button class="btn btn-sm btn-outline-secondary" onclick="pasteFromClipboard()">
-          <i class="bi bi-clipboard me-1"></i>클립보드 이미지
+        <div class="photo-status nb-status" style="margin-bottom:10px;"></div>
+        <div class="photo-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="nb-btn nb-btn-outline nb-btn-sm" style="flex:1;" onclick="copyAllPhotoUrls(this)">
+            <i class="bi bi-link-45deg"></i> 전체 링크 복사
+          </button>
+          <button class="nb-btn nb-btn-outline nb-btn-sm" style="flex:1;" onclick="downloadAllPhotos(this)">
+            <i class="bi bi-download"></i> 전체 다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ 저장 -->
+    <div class="nb-card food-export-section sec-locked">
+      <div class="nb-card-header">
+        <div class="sec-title"><span class="step-num" style="background:#374151;">5</span><span>저장</span></div>
+      </div>
+      <div class="nb-card-body">
+        <label class="nb-label">저장 폴더</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input type="text" class="nb-input food-export-path" value="./uploads/food" style="flex:1;">
+          <label class="nb-btn nb-btn-outline nb-btn-sm" style="cursor:pointer;">
+            <i class="bi bi-folder2-open"></i>
+            <input type="file" webkitdirectory hidden onchange="setFolderPath(this)">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <label class="nb-check" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;justify-content:center;">
+            <input type="radio" name="food-fmt-__TAB__" value="txt" checked>
+            <span class="nb-check-box" style="border-radius:50%;"></span>
+            <span class="nb-check-label">TXT</span>
+          </label>
+          <label class="nb-check" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;justify-content:center;">
+            <input type="radio" name="food-fmt-__TAB__" value="html">
+            <span class="nb-check-box" style="border-radius:50%;"></span>
+            <span class="nb-check-label">HTML</span>
+          </label>
+        </div>
+        <button class="nb-btn nb-btn-dark nb-btn-full" onclick="saveFoodToFolder(this)" style="margin-bottom:6px;">
+          <i class="bi bi-folder-check"></i> 저장소 저장 (사진 링크 포함)
         </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="clearAttachments()">
-          <i class="bi bi-trash me-1"></i>초기화
+        <div class="food-post-status nb-status" style="margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <!-- ⑥ 네이버 영수증 리뷰 -->
+    <div class="nb-card" style="border:1.5px solid #bfdbfe;">
+      <div class="nb-card-header" style="background:#eff6ff;">
+        <div class="sec-title">
+          <span class="step-num" style="background:#3b82f6;">6</span>
+          <span>네이버 영수증 리뷰</span>
+          <span style="font-size:11px;font-weight:400;color:#1e40af;margin-left:6px;">200-800자 자동 생성</span>
+        </div>
+      </div>
+      <div class="nb-card-body">
+        <!-- 메뉴 & 금액 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div>
+            <label class="nb-label">주문 메뉴</label>
+            <textarea class="nb-textarea receipt-menu" rows="2"
+              placeholder="예: 삼겹살 2인분, 된장찌개&#10;메뉴 여러 개는 줄바꿈"></textarea>
+          </div>
+          <div>
+            <label class="nb-label">결제 금액</label>
+            <div style="position:relative;">
+              <input type="text" class="nb-input receipt-amount" placeholder="예: 35,000원" style="padding-right:32px;">
+              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-xs);">원</span>
+            </div>
+            <label class="nb-label" style="margin-top:10px;">방문 날짜</label>
+            <input type="date" class="nb-input receipt-date" style="padding:7px 10px;">
+          </div>
+        </div>
+
+        <!-- 리뷰 생성 버튼 -->
+        <button class="nb-btn nb-btn-full" style="background:#3b82f6;color:#fff;margin-bottom:10px;" onclick="generateReceiptReview(this)">
+          <i class="bi bi-receipt"></i> 영수증 리뷰 AI 생성
         </button>
-      </div>
-      <div id="attachList" class="small text-muted"></div>
-    </div>
-  </div>
+        <div class="nb-prog receipt-progress" style="display:none;margin-bottom:8px;"><div class="nb-prog-bar"></div></div>
+        <div class="receipt-gen-status nb-status" style="margin-bottom:10px;"></div>
 
-  <!-- ② 생성 설정 -->
-  <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <div><span class="badge bg-success me-2">②</span><strong>생성 설정</strong></div>
-      <button class="btn btn-sm btn-warning" onclick="updateLogic()">
-        <i class="bi bi-arrow-clockwise me-1"></i>블로그 로직 최신화
-      </button>
-    </div>
-    <div class="card-body">
-      <div id="logicStatus" class="small text-muted mb-3"></div>
+        <!-- 생성된 리뷰 -->
+        <label class="nb-label">생성된 리뷰 <span class="receipt-char-count" style="font-weight:400;color:var(--text-xs);"></span></label>
+        <textarea class="nb-textarea receipt-text" rows="5"
+          placeholder="AI 영수증 리뷰가 여기 표시됩니다..."
+          oninput="updateReceiptCount(this)"></textarea>
 
-      <div class="mb-2">
-        <label class="form-label small fw-bold">어투</label>
-        <div class="btn-group w-100" role="group">
-          <input type="radio" class="btn-check" name="tone" id="t1" value="전문적">
-          <label class="btn btn-outline-secondary btn-sm" for="t1">전문적</label>
-          <input type="radio" class="btn-check" name="tone" id="t2" value="친근하게" checked>
-          <label class="btn btn-outline-success btn-sm" for="t2">친근하게</label>
-          <input type="radio" class="btn-check" name="tone" id="t3" value="감성적">
-          <label class="btn btn-outline-secondary btn-sm" for="t3">감성적</label>
+        <!-- 키워드 -->
+        <div style="margin-top:8px;margin-bottom:10px;">
+          <label class="nb-label" style="margin-bottom:4px;">추천 키워드</label>
+          <div class="receipt-keywords" style="display:flex;flex-wrap:wrap;gap:5px;min-height:24px;"></div>
         </div>
-      </div>
 
-      <div class="mb-2">
-        <label class="form-label small fw-bold">이미지 수</label>
-        <div class="d-flex align-items-center gap-2">
-          <input type="range" class="form-range flex-grow-1" id="imgCount" min="3" max="10" value="5">
-          <span class="badge bg-success fs-6" id="imgCountBadge">5장</span>
-        </div>
-      </div>
-
-      <div class="d-flex gap-3">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="inclYt" checked>
-          <label class="form-check-label small" for="inclYt">유튜브 링크 자동 삽입</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="inclMap">
-          <label class="form-check-label small" for="inclMap">지도/위치 포함</label>
+        <!-- 복사 버튼 -->
+        <div style="display:flex;gap:8px;">
+          <button class="nb-btn nb-btn-outline nb-btn-sm" style="flex:1;" onclick="copyReceiptReview(this)">
+            <i class="bi bi-clipboard"></i> 리뷰 복사
+          </button>
+          <button class="nb-btn nb-btn-outline nb-btn-sm" style="flex:1;" onclick="openNaverReview(this)">
+            <i class="bi bi-box-arrow-up-right"></i> 네이버 리뷰 작성↗
+          </button>
         </div>
       </div>
     </div>
-  </div>
 
+  </div><!-- /오른쪽 -->
+  </div><!-- /gen-grid -->
 </div>
-
-<!-- ── 오른쪽: 결과 패널 ── -->
-<div class="col-12 col-lg-7">
-
-  <!-- ③ 생성 -->
-  <div class="card mb-3">
-    <div class="card-header"><span class="badge bg-success me-2">③</span><strong>글 생성 & 미리보기</strong></div>
-    <div class="card-body">
-
-      <!-- 생성 버튼 -->
-      <div class="d-flex gap-2 mb-3">
-        <button class="btn btn-success flex-grow-1" onclick="generateContent()">
-          <i class="bi bi-robot me-1"></i>AI 글 생성
-        </button>
-      </div>
-      <div id="genProgress" class="progress mb-2" style="display:none;height:6px;">
-        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success w-100"></div>
-      </div>
-      <div id="genStatus" class="small text-muted mb-2"></div>
-
-      <!-- 제목 -->
-      <label class="form-label small fw-bold">제목</label>
-      <input type="text" id="postTitle" class="form-control mb-2" placeholder="AI 생성 후 표시됩니다">
-
-      <!-- 본문 -->
-      <label class="form-label small fw-bold">본문 <span class="text-muted">(직접 편집 가능 · [이미지:설명] = 삽입 위치)</span></label>
-      <textarea id="postContent" class="form-control mb-2" rows="10"
-        placeholder="← AI 글 생성 버튼을 눌러주세요"></textarea>
-
-      <!-- 태그 -->
-      <label class="form-label small fw-bold">태그</label>
-      <input type="text" id="postTags" class="form-control mb-3" placeholder="태그1, 태그2, ...">
-
-      <!-- 보완 요청 -->
-      <div class="alert alert-warning py-2 mb-2">
-        <label class="form-label small fw-bold mb-1"><i class="bi bi-pencil me-1"></i>보완 요청 내용 (재생성에 반영)</label>
-        <textarea id="supplement" class="form-control" rows="2"
-          placeholder="예: 더 구체적인 예시를 추가해줘 / 도입부를 더 감성적으로 / 3번 항목을 더 자세히"></textarea>
-      </div>
-
-      <!-- 재생성 / 확정 버튼 -->
-      <div class="d-flex gap-2">
-        <button class="btn btn-warning flex-grow-1" id="btnRegen" onclick="regenerate()" disabled>
-          <i class="bi bi-arrow-counterclockwise me-1"></i>보완 반영 재생성
-        </button>
-        <button class="btn btn-primary flex-grow-1" id="btnConfirm" onclick="confirmPost()" disabled>
-          <i class="bi bi-check-circle me-1"></i>확정
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ④ 이미지 생성 -->
-  <div class="card mb-3" id="imageSection" style="opacity:0.5;pointer-events:none;">
-    <div class="card-header"><span class="badge bg-primary me-2">④</span><strong>이미지 생성 (DALL-E 3)</strong></div>
-    <div class="card-body">
-      <div class="mb-2">
-        <label class="form-label small fw-bold">저장 경로</label>
-        <div class="input-group input-group-sm">
-          <input type="text" id="imageSavePath" class="form-control"
-            value="{{ config.get('IMAGE_DIR','./uploads/images') if config is defined else './uploads/images' }}">
-          <span class="input-group-text"><i class="bi bi-folder2"></i></span>
-        </div>
-        <div class="form-text">모바일: /storage/emulated/0/Download/blog_images 형태로 입력</div>
-      </div>
-      <button class="btn btn-primary w-100 mb-3" onclick="generateImages()">
-        <i class="bi bi-image me-1"></i>이미지 생성 시작
-      </button>
-      <div id="imgProgress" class="progress mb-2" style="display:none;height:6px;">
-        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary w-100"></div>
-      </div>
-      <div id="imgStatus" class="small text-muted mb-2"></div>
-      <div id="imgThumbnails" class="d-flex flex-wrap gap-2"></div>
-    </div>
-  </div>
-
-  <!-- ⑤ 최종 저장 & 포스팅 -->
-  <div class="card" id="exportSection" style="opacity:0.5;pointer-events:none;">
-    <div class="card-header"><span class="badge bg-dark me-2">⑤</span><strong>최종 저장 & 포스팅</strong></div>
-    <div class="card-body">
-      <div class="mb-2">
-        <label class="form-label small fw-bold">저장 폴더</label>
-        <div class="input-group input-group-sm">
-          <input type="text" id="exportPath" class="form-control" value="./uploads">
-        </div>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-dark flex-grow-1" onclick="exportTxt()">
-          <i class="bi bi-file-text me-1"></i>TXT 저장
-        </button>
-        <button class="btn btn-danger flex-grow-1" onclick="postToNaver()">
-          <i class="bi bi-send me-1"></i>네이버 포스팅
-        </button>
-      </div>
-      <div id="postStatus" class="small text-muted mt-2"></div>
-    </div>
-  </div>
-
-</div>
-</div>
-
-<!-- 히든 데이터 -->
-<input type="hidden" id="currentPostId" value="">
-<input type="hidden" id="currentJobId" value="">
+</template>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-// 이미지 슬라이더
-document.getElementById('imgCount').addEventListener('input', function(){
-  document.getElementById('imgCountBadge').textContent = this.value + '장';
-});
-
-// 첨부 파일 목록
-let attachedFiles = [];
-document.getElementById('fileInput').addEventListener('change', async function(){
-  for(const file of this.files){
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload', {method:'POST', body:fd});
-    const data = await res.json();
-    attachedFiles.push(data);
-    updateAttachList();
-  }
-});
-
-function updateAttachList(){
-  const el = document.getElementById('attachList');
-  if(!attachedFiles.length){ el.textContent='첨부 없음'; return; }
-  el.innerHTML = attachedFiles.map(f=>
-    `<span class="badge bg-secondary me-1"><i class="bi bi-paperclip me-1"></i>${f.name}</span>`
-  ).join('');
-}
-
-function clearAttachments(){ attachedFiles=[]; updateAttachList(); }
-
-async function pasteFromClipboard(){
-  try{
-    const items = await navigator.clipboard.read();
-    for(const item of items){
-      if(item.types.includes('image/png')||item.types.includes('image/jpeg')){
-        const blob = await item.getType(item.types.find(t=>t.startsWith('image/')));
-        const fd = new FormData();
-        fd.append('file', blob, 'clipboard.png');
-        const res = await fetch('/api/upload',{method:'POST',body:fd});
-        const data = await res.json();
-        attachedFiles.push({...data, type:'image'});
-        updateAttachList();
-        return;
-      }
-    }
-    alert('클립보드에 이미지가 없습니다.');
-  }catch(e){ alert('클립보드 접근 오류: '+e.message); }
-}
+var REUSE_POST = {{ (reuse_post | tojson) if reuse_post else 'null' }};
 </script>
 {% endblock %}
