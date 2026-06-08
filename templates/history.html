@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}글 관리 - N 블로그 자동화{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>글 관리 이력</h5>
+  <div id="statsBar" class="d-flex gap-2"></div>
+</div>
+
+<!-- 검색/필터 -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6">
+        <input type="text" id="searchInput" class="form-control form-control-sm"
+          placeholder="제목 또는 키워드 검색..." oninput="filterPosts()">
+      </div>
+      <div class="col-12 col-sm-6">
+        <div class="btn-group btn-group-sm w-100">
+          <button class="btn btn-outline-secondary active" onclick="filterByStatus('all',this)">전체</button>
+          <button class="btn btn-outline-warning" onclick="filterByStatus('draft',this)">초안</button>
+          <button class="btn btn-outline-primary" onclick="filterByStatus('confirmed',this)">확정</button>
+          <button class="btn btn-outline-success" onclick="filterByStatus('posted',this)">포스팅됨</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 포스트 목록 -->
+<div id="postList">
+{% for post in posts %}
+<div class="card mb-2 post-card" data-status="{{ post.status }}" data-title="{{ post.title }}">
+  <div class="card-body py-2">
+    <div class="d-flex justify-content-between align-items-start">
+      <div class="flex-grow-1">
+        <a href="/history/{{ post.id }}" class="text-decoration-none">
+          <strong class="d-block">{{ post.title or '(제목 없음)' }}</strong>
+        </a>
+        <div class="small text-muted mt-1">
+          <span class="me-2"><i class="bi bi-tag me-1"></i>{{ post.main_keyword or '-' }}</span>
+          <span class="me-2"><i class="bi bi-clock me-1"></i>{{ post.created_at[:16] if post.created_at else '-' }}</span>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 ms-2">
+        {% if post.status == 'posted' %}
+          <span class="badge bg-success">포스팅됨</span>
+        {% elif post.status == 'confirmed' %}
+          <span class="badge bg-primary">확정</span>
+        {% else %}
+          <span class="badge bg-warning text-dark">초안</span>
+        {% endif %}
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="/history/{{ post.id }}"><i class="bi bi-eye me-2"></i>보기</a></li>
+            <li><a class="dropdown-item" href="/?reuse={{ post.id }}"><i class="bi bi-arrow-repeat me-2"></i>재생성</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#" onclick="deletePost('{{ post.id }}')"><i class="bi bi-trash me-2"></i>삭제</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+  아직 생성된 글이 없습니다.<br>
+  <a href="/" class="btn btn-success mt-3">글 생성하러 가기</a>
+</div>
+{% endfor %}
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+// 통계 로드
+fetch('/api/stats').then(r=>r.json()).then(data=>{
+  document.getElementById('statsBar').innerHTML = `
+    <span class="badge bg-secondary">전체 ${data.total}</span>
+    <span class="badge bg-warning text-dark">초안 ${data.draft}</span>
+    <span class="badge bg-success">포스팅 ${data.posted}</span>`;
+});
+
+let currentStatus = 'all';
+function filterByStatus(status, btn){
+  currentStatus = status;
+  document.querySelectorAll('.btn-group .btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filterPosts();
+}
+function filterPosts(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.post-card').forEach(card=>{
+    const title = card.dataset.title.toLowerCase();
+    const status = card.dataset.status;
+    const matchStatus = currentStatus==='all' || status===currentStatus;
+    const matchSearch = !q || title.includes(q);
+    card.style.display = (matchStatus && matchSearch) ? '' : 'none';
+  });
+}
+async function deletePost(id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  await fetch(`/history/${id}/delete`, {method:'POST'});
+  location.reload();
+}
+</script>
+{% endblock %}

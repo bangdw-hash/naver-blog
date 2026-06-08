@@ -1,0 +1,8 @@
+body { background: #f8f9fa; font-family: 'Malgun Gothic', sans-serif; }
+.card { border: none; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.card-header { background: #fff; border-bottom: 1px solid #eee; padding: .6rem 1rem; }
+.navbar { box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.post-content { font-size: .9rem; line-height: 1.8; }
+textarea.form-control { resize: vertical; }
+.badge { font-weight: 500; }
+@media(max-width:768px){ .card-body{ padding:.75rem; } }

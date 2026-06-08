@@ -1,0 +1,12 @@
+flask
+flask-cors
+python-dotenv
+anthropic
+openai
+supabase
+Pillow
+pdfplumber
+requests
+schedule
+playwright
+uuid

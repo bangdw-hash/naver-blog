@@ -1,0 +1,10 @@
+.env
+*.pyc
+__pycache__/
+data/
+uploads/
+*.db
+naver_cookies.json
+blog_logic.json
+settings.json
+.DS_Store
