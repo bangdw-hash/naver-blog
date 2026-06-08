@@ -32,18 +32,44 @@ def remote_control():
     port = int(os.getenv("PORT", 5000))
     ip   = _get_local_ip()
     url  = f"http://{ip}:{port}"
-    return render_template("remote_control.html", local_url=url, ip=ip, port=port)
+    # ngrok 공개 URL (있으면)
+    ngrok_url = None
+    try:
+        from services.tunnel_service import get_public_url
+        ngrok_url = get_public_url()
+    except Exception:
+        pass
+    return render_template("remote_control.html",
+                           local_url=url, ip=ip, port=port,
+                           ngrok_url=ngrok_url)
 
 
 @remote_bp.route("/api/local-ip")
 def local_ip():
     port = int(os.getenv("PORT", 5000))
     ip   = _get_local_ip()
+    ngrok_url = None
+    try:
+        from services.tunnel_service import get_public_url
+        ngrok_url = get_public_url()
+    except Exception:
+        pass
     return jsonify({
-        "ip":   ip,
-        "port": port,
-        "url":  f"http://{ip}:{port}"
+        "ip":       ip,
+        "port":     port,
+        "url":      f"http://{ip}:{port}",
+        "ngrok_url": ngrok_url
     })
+
+
+@remote_bp.route("/api/tunnel-status")
+def tunnel_status():
+    """ngrok 터널 상태 + 공개 URL"""
+    try:
+        from services.tunnel_service import get_status
+        return jsonify(get_status())
+    except Exception as e:
+        return jsonify({"active": False, "public_url": None, "type": None, "error": str(e)})
 
 
 @remote_bp.route("/api/qr-image")

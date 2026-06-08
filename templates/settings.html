@@ -402,20 +402,56 @@
   <div class="nb-card" style="grid-column:span 2;">
     <div class="nb-card-header">
       <div class="sec-title"><i class="bi bi-phone-fill"></i> 모바일 접속 정보</div>
+      <a class="nb-btn nb-btn-outline nb-btn-sm" href="/remote-control" target="_blank">QR 페이지 열기↗</a>
     </div>
     <div class="nb-card-body">
-      <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-        <div style="font-size:11px;color:var(--text-xs);margin-bottom:6px;">같은 WiFi에서 스마트폰으로 접속</div>
+      <!-- WiFi 접속 -->
+      <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:11px;color:var(--text-xs);margin-bottom:6px;font-weight:600;"><i class="bi bi-wifi"></i> 같은 WiFi에서 접속</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <code id="mobileUrl" style="font-size:14px;font-weight:700;color:var(--primary);">로딩 중...</code>
           <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="copyMobileUrl()"><i class="bi bi-copy"></i></button>
         </div>
       </div>
-      <ol style="font-size:12.5px;color:var(--text-s);padding-left:18px;margin:0;line-height:2.2;">
-        <li>PC와 스마트폰을 <strong>같은 WiFi</strong>에 연결</li>
-        <li>스마트폰 브라우저에서 위 주소 접속</li>
-        <li>카메라·클립보드 권한 → <strong>항상 허용</strong></li>
-      </ol>
+
+      <!-- ngrok 인증 토큰 -->
+      <div style="border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+          <i class="bi bi-globe2" style="color:var(--primary);"></i> 어디서든 접속 (ngrok 터널)
+          <span id="ngrokTokenStatus" style="margin-left:auto;"></span>
+        </div>
+        <div class="set-field" style="margin-bottom:8px;">
+          <label class="set-label">ngrok 인증 토큰</label>
+          <div style="display:flex;gap:8px;">
+            <div class="set-input-wrap" style="flex:1;margin-bottom:0;">
+              <i class="bi bi-key set-ico"></i>
+              <input type="password" id="ngrok_auth_token" class="set-input"
+                value="{{ cfg.NGROK_AUTH_TOKEN }}"
+                placeholder="2abc1234xxx_yyy (dashboard.ngrok.com에서 발급)">
+              <button class="set-eye" type="button" onclick="togglePw(this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+          <a class="set-link" href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank">
+            ngrok 대시보드 → Your Authtoken 발급↗ (무료)
+          </a>
+        </div>
+        <div style="font-size:12px;color:var(--text-xs);line-height:1.8;">
+          토큰 저장 후 <strong>앱 재시작</strong>하면 공개 HTTPS URL이 자동 생성됩니다<br>
+          LTE/5G 등 어느 네트워크에서도 접속 가능
+        </div>
+      </div>
+
+      <!-- 터널 현재 상태 -->
+      <div id="tunnelStatusBox" style="display:none;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:4px;"><i class="bi bi-check-circle-fill"></i> ngrok 터널 활성</div>
+        <code id="tunnelPublicUrl" style="font-size:13px;font-weight:700;color:#16a34a;word-break:break-all;"></code>
+      </div>
+
+      <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="checkTunnelStatus()">
+        <i class="bi bi-arrow-clockwise"></i> 터널 상태 확인
+      </button>
     </div>
   </div>
 
@@ -627,6 +663,7 @@ async function saveSettings(btn) {
     instagram_access_token: g('instagram_access_token'),
     instagram_page_id:      g('instagram_page_id'),
     gdrive_folder_name:     g('gdrive_folder_name'),
+    ngrok_auth_token:       g('ngrok_auth_token'),
   };
   try {
     const res    = await fetch('/settings/save', {
@@ -655,6 +692,27 @@ async function saveSettings(btn) {
   }
 }
 
+/* ── 터널 상태 확인 ─────────────────────────────────────── */
+async function checkTunnelStatus() {
+  try {
+    const res  = await fetch('/api/tunnel-status');
+    const data = await res.json();
+    const box  = document.getElementById('tunnelStatusBox');
+    const url  = document.getElementById('tunnelPublicUrl');
+    const pill = document.getElementById('ngrokTokenStatus');
+    if (data.active && data.public_url) {
+      if (box) { box.style.display = ''; }
+      if (url) { url.textContent = data.public_url; }
+      if (pill) { pill.innerHTML = '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">활성</span>'; }
+      showToast('ngrok 터널 활성: ' + data.public_url);
+    } else {
+      if (box) { box.style.display = 'none'; }
+      if (pill) { pill.innerHTML = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">비활성</span>'; }
+      showToast('ngrok 터널 없음 — 앱 재시작 후 확인하세요');
+    }
+  } catch(e) { showToast('터널 확인 실패: ' + e.message, 'error'); }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const port = location.port || '';
   document.getElementById('mobileUrl').textContent =
@@ -662,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   switchSetTab(localStorage.getItem('settings_tab') || 'ai');
   loadSyncStatus();
+  checkTunnelStatus();
 
   fetch('/api/gdrive-status').then(r=>r.json()).then(d => {
     const pill = document.getElementById('gdriveStatus');

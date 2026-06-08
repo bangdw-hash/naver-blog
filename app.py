@@ -88,20 +88,36 @@ threading.Thread(target=_start_sync, daemon=True).start()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
-    # 현재 IP 표시
+
+    # ── WiFi IP 감지 ──────────────────────────────────────────
     import socket
     try:
-        ip = socket.gethostbyname(socket.gethostname())
-    except:
-        ip = "알 수 없음"
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        local_ip = "알 수 없음"
+
+    # ── ngrok 터널 시작 (백그라운드) ─────────────────────────
+    public_url = None
+    ngrok_enabled = os.getenv("NGROK_ENABLED", "true").lower() != "false"
+    if ngrok_enabled and not IS_RAILWAY:
+        try:
+            from services.tunnel_service import start_tunnel
+            public_url = start_tunnel(port)
+        except Exception as _te:
+            print(f"[ngrok] 터널 시작 skip: {_te}")
+
+    # ── 접속 정보 출력 ────────────────────────────────────────
     print(f"""
-╔══════════════════════════════════════════╗
-║     네이버 블로그 자동화 웹앱 시작       ║
-╠══════════════════════════════════════════╣
-║  PC 접속:      http://localhost:{port}     ║
-║  모바일 접속:  http://{ip}:{port}  ║
-║  (같은 WiFi 연결 필요)                   ║
-║  자동 동기화:  5분마다 백그라운드 실행    ║
-╚══════════════════════════════════════════╝
+╔══════════════════════════════════════════════════╗
+║        N블로그 자동화 웹앱 시작                  ║
+╠══════════════════════════════════════════════════╣
+║  PC 접속:       http://localhost:{port}             ║
+║  같은 WiFi:     http://{local_ip}:{port}
+║  원격(모바일):  {public_url or '(ngrok 미설정 — /remote-control 참조)'}
+╚══════════════════════════════════════════════════╝
     """)
+
     app.run(host="0.0.0.0", port=port, debug=True)

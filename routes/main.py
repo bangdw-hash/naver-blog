@@ -55,6 +55,8 @@ def save_settings():
         "instagram_page_id":      "INSTAGRAM_PAGE_ID",
         # Google Drive
         "gdrive_folder_name":     "GDRIVE_FOLDER_NAME",
+        # ngrok 터널
+        "ngrok_auth_token":       "NGROK_AUTH_TOKEN",
     }
 
     # 빈 문자열 / placeholder 제외

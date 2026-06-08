@@ -38,6 +38,8 @@ MANAGED_KEYS = {
     "INSTAGRAM_PAGE_ID",
     # Google Drive
     "GDRIVE_FOLDER_NAME",
+    # ngrok 터널
+    "NGROK_AUTH_TOKEN",
     # 기타
     "SECRET_KEY",
 }
@@ -181,6 +183,8 @@ def get_display_settings() -> dict:
         "INSTAGRAM_PAGE_ID":      _val("INSTAGRAM_PAGE_ID"),
         # Google Drive
         "GDRIVE_FOLDER_NAME":     _val("GDRIVE_FOLDER_NAME") or "NaverBlog-FoodPhotos",
+        # ngrok
+        "NGROK_AUTH_TOKEN":       _mask(_val("NGROK_AUTH_TOKEN")),
     }
 
 
