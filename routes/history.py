@@ -8,8 +8,17 @@ history_bp = Blueprint("history", __name__)
 
 @history_bp.route("/")
 def history_list():
-    posts = list_posts(limit=50)
-    return render_template("history.html", posts=posts)
+    posts = list_posts(limit=100)
+
+    # 맛집 게시물 로드
+    food_posts = []
+    try:
+        from services.food_db import list_food_posts
+        food_posts = list_food_posts(limit=100)
+    except Exception:
+        pass
+
+    return render_template("history.html", posts=posts, food_posts=food_posts)
 
 @history_bp.route("/<post_id>")
 def post_detail(post_id):
@@ -30,5 +39,15 @@ def delete(post_id):
 @history_bp.route("/<post_id>/update-status", methods=["POST"])
 def update_status(post_id):
     data = request.json or {}
-    update_post(post_id, {"status": data.get("status","draft")})
+    update_post(post_id, {"status": data.get("status", "draft")})
+    return jsonify({"ok": True})
+
+# ── 맛집 게시물 삭제 ─────────────────────────────────────────
+@history_bp.route("/food/<post_id>/delete", methods=["POST"])
+def delete_food(post_id):
+    try:
+        from services.food_db import delete_food_post
+        delete_food_post(post_id)
+    except Exception:
+        pass
     return jsonify({"ok": True})

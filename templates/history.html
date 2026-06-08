@@ -2,137 +2,361 @@
 {% block title %}글 관리 - N 블로그 자동화{% endblock %}
 {% block content %}
 
-<!-- 헤더 -->
+<!-- ══ 헤더 ═══════════════════════════════════════════════════ -->
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
   <div>
     <h2 style="font-size:20px;font-weight:700;margin:0;">글 관리</h2>
-    <p style="font-size:13px;color:var(--text-s);margin:3px 0 0;">작성된 블로그 글 이력을 관리합니다</p>
+    <p style="font-size:13px;color:var(--text-s);margin:3px 0 0;">블로그 글과 맛집 탐방 기록을 관리합니다</p>
   </div>
-  <div id="statsBar" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+  <div style="display:flex;gap:8px;" id="statsBar"></div>
 </div>
 
-<!-- 검색/필터 -->
-<div class="nb-card" style="margin-bottom:16px;">
-  <div class="nb-card-body" style="padding:12px 18px;">
-    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
-      <div style="position:relative;">
-        <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-xs);font-size:13px;"></i>
-        <input type="text" id="searchInput" class="nb-input" style="padding-left:34px;"
-          placeholder="제목 또는 키워드 검색..." oninput="filterPosts()">
+<!-- ══ 서브탭 ══════════════════════════════════════════════════ -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">
+  <button class="hist-tab active" id="tab-blog" onclick="switchHistTab('blog')">
+    <i class="bi bi-pencil-square"></i> 블로그 글
+    <span class="hist-tab-cnt" id="cnt-blog">{{ posts|length }}</span>
+  </button>
+  <button class="hist-tab" id="tab-food" onclick="switchHistTab('food')">
+    <i class="bi bi-shop"></i> 맛집 탐방
+    <span class="hist-tab-cnt food" id="cnt-food">{{ food_posts|length }}</span>
+  </button>
+</div>
+
+<!-- ══ 공통 검색 바 ════════════════════════════════════════════ -->
+<div class="nb-card" style="margin-bottom:14px;">
+  <div class="nb-card-body" style="padding:10px 16px;">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div style="position:relative;flex:1;min-width:180px;">
+        <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-xs);font-size:13px;"></i>
+        <input type="text" id="searchInput" class="nb-input" style="padding-left:32px;"
+          placeholder="제목 또는 키워드 검색..." oninput="filterCards()">
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="nb-btn nb-btn-outline nb-btn-sm active-filter" data-status="all" onclick="filterByStatus('all',this)">전체</button>
-        <button class="nb-btn nb-btn-outline nb-btn-sm" data-status="draft" onclick="filterByStatus('draft',this)">
-          <span class="nb-tag w" style="font-size:11px;">초안</span>
-        </button>
-        <button class="nb-btn nb-btn-outline nb-btn-sm" data-status="confirmed" onclick="filterByStatus('confirmed',this)">
-          <span class="nb-tag b" style="font-size:11px;">확정</span>
-        </button>
-        <button class="nb-btn nb-btn-outline nb-btn-sm" data-status="posted" onclick="filterByStatus('posted',this)">
-          <span class="nb-tag" style="font-size:11px;">포스팅됨</span>
-        </button>
+      <div id="filterBtns" style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="nb-btn nb-btn-outline nb-btn-sm filter-btn active-filter" data-status="all"
+          onclick="setFilter('all',this)">전체</button>
+        <button class="nb-btn nb-btn-outline nb-btn-sm filter-btn" data-status="draft"
+          onclick="setFilter('draft',this)"><span class="nb-tag w" style="font-size:11px;">초안</span></button>
+        <button class="nb-btn nb-btn-outline nb-btn-sm filter-btn" data-status="confirmed"
+          onclick="setFilter('confirmed',this)"><span class="nb-tag b" style="font-size:11px;">확정</span></button>
+        <button class="nb-btn nb-btn-outline nb-btn-sm filter-btn" data-status="posted"
+          onclick="setFilter('posted',this)"><span class="nb-tag" style="font-size:11px;">포스팅됨</span></button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 포스트 목록 -->
-<div id="postList" style="display:flex;flex-direction:column;gap:8px;">
-{% for post in posts %}
-<div class="hist-item post-card" data-status="{{ post.status }}" data-title="{{ post.title or '' }}" onclick="location.href='/history/{{ post.id }}'">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-    <div style="flex:1;min-width:0;">
-      <div class="hist-title">{{ post.title or '(제목 없음)' }}</div>
-      <div class="hist-meta">
-        {% if post.main_keyword %}
-        <span><i class="bi bi-tag" style="color:var(--primary);"></i> {{ post.main_keyword }}</span>
-        {% endif %}
-        <span><i class="bi bi-clock"></i> {{ post.created_at[:16] if post.created_at else '-' }}</span>
-        {% if post.tags %}
-        <span><i class="bi bi-hash"></i> {{ post.tags[:40] if post.tags|length > 40 else post.tags }}</span>
-        {% endif %}
+<!-- ══ 블로그 탭 ════════════════════════════════════════════════ -->
+<div id="pane-blog">
+{% if posts %}
+<div style="display:flex;flex-direction:column;gap:8px;" id="blogList">
+  {% for post in posts %}
+  <div class="hist-item post-card" data-status="{{ post.status }}" data-title="{{ post.title or '' }}"
+    onclick="location.href='/history/{{ post.id }}'">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+      <div style="flex:1;min-width:0;">
+        <div class="hist-title">
+          <i class="bi bi-pencil-square" style="color:var(--primary);font-size:13px;margin-right:5px;"></i>
+          {{ post.title or '(제목 없음)' }}
+        </div>
+        <div class="hist-meta">
+          {% if post.main_keyword %}
+          <span><i class="bi bi-tag" style="color:var(--primary);"></i> {{ post.main_keyword }}</span>
+          {% endif %}
+          <span><i class="bi bi-clock"></i> {{ post.created_at[:16] if post.created_at else '-' }}</span>
+          {% if post.tags %}
+          <span><i class="bi bi-hash"></i>
+            {{ post.tags[:50] if post.tags|length > 50 else post.tags }}
+          </span>
+          {% endif %}
+        </div>
       </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;" onclick="event.stopPropagation()">
-      {% if post.status == 'posted' %}
-        <span class="nb-tag">포스팅됨</span>
-      {% elif post.status == 'confirmed' %}
-        <span class="nb-tag b">확정</span>
-      {% else %}
-        <span class="nb-tag w">초안</span>
-      {% endif %}
-      <div class="nb-dd">
-        <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="toggleDd(this)" style="padding:6px 10px;">
-          <i class="bi bi-three-dots-vertical"></i>
-        </button>
-        <div class="nb-dd-menu">
-          <a class="nb-dd-item" href="/history/{{ post.id }}"><i class="bi bi-eye"></i> 보기</a>
-          <a class="nb-dd-item" href="/?reuse={{ post.id }}"><i class="bi bi-arrow-repeat"></i> 재생성</a>
-          <div class="nb-dd-sep"></div>
-          <div class="nb-dd-item danger" onclick="deletePost('{{ post.id }}')"><i class="bi bi-trash"></i> 삭제</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;" onclick="event.stopPropagation()">
+        {% if post.status == 'posted' %}
+          <span class="nb-tag">포스팅됨</span>
+        {% elif post.status == 'confirmed' %}
+          <span class="nb-tag b">확정</span>
+        {% else %}
+          <span class="nb-tag w">초안</span>
+        {% endif %}
+        <div class="nb-dd">
+          <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="toggleDd(this)" style="padding:6px 10px;">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <div class="nb-dd-menu">
+            <a class="nb-dd-item" href="/history/{{ post.id }}"><i class="bi bi-eye"></i> 보기</a>
+            <a class="nb-dd-item" href="/?reuse={{ post.id }}"><i class="bi bi-arrow-repeat"></i> 재생성</a>
+            <div class="nb-dd-sep"></div>
+            <div class="nb-dd-item danger" onclick="deleteBlog('{{ post.id }}')"><i class="bi bi-trash"></i> 삭제</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  {% endfor %}
 </div>
 {% else %}
 <div class="nb-card">
   <div class="empty-state">
     <div class="ico"><i class="bi bi-journal-text"></i></div>
-    <div class="msg">아직 생성된 글이 없습니다</div>
+    <div class="msg">블로그 글이 없습니다</div>
     <div class="sub">AI로 첫 번째 블로그 글을 생성해보세요</div>
-    <a href="/" class="nb-btn nb-btn-primary">
-      <i class="bi bi-pencil-square"></i> 글 생성하러 가기
-    </a>
+    <a href="/" class="nb-btn nb-btn-primary"><i class="bi bi-pencil-square"></i> 글 생성하러 가기</a>
   </div>
 </div>
-{% endfor %}
+{% endif %}
 </div>
+
+<!-- ══ 맛집 탭 ══════════════════════════════════════════════════ -->
+<div id="pane-food" style="display:none;">
+{% if food_posts %}
+<div style="display:flex;flex-direction:column;gap:8px;" id="foodList">
+  {% for fp in food_posts %}
+  <div class="hist-item food-card post-card" data-status="{{ fp.status }}"
+    data-title="{{ fp.title or fp.place_name or '' }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+      <div style="flex:1;min-width:0;">
+        <div class="hist-title">
+          <i class="bi bi-shop" style="color:#f59e0b;font-size:13px;margin-right:5px;"></i>
+          {{ fp.title or fp.place_name or '(제목 없음)' }}
+        </div>
+        <div class="hist-meta">
+          {% if fp.place_name %}
+          <span><i class="bi bi-geo-alt" style="color:#f59e0b;"></i> {{ fp.place_name }}</span>
+          {% endif %}
+          {% if fp.place_cat %}
+          <span><i class="bi bi-tag"></i> {{ fp.place_cat }}</span>
+          {% endif %}
+          {% if fp.visit_date %}
+          <span><i class="bi bi-calendar3"></i> {{ fp.visit_date }}</span>
+          {% endif %}
+          <span><i class="bi bi-clock"></i> {{ fp.created_at[:16] if fp.created_at else '-' }}</span>
+          {% if fp.rating_taste %}
+          <span>
+            <i class="bi bi-star-fill" style="color:#f59e0b;"></i>
+            맛 {{ fp.rating_taste }}/5 &nbsp;
+            <i class="bi bi-star-fill" style="color:#f59e0b;"></i>
+            분위기 {{ fp.rating_mood }}/5
+          </span>
+          {% endif %}
+          {% if fp.photos %}
+          {% set photo_list = fp.photos if fp.photos is iterable and fp.photos is not string else [] %}
+          <span><i class="bi bi-images"></i>
+            {% if fp.photos and fp.photos != '[]' %}사진 있음{% endif %}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;" onclick="event.stopPropagation()">
+        {% if fp.status == 'posted' %}
+          <span class="nb-tag">포스팅됨</span>
+        {% elif fp.title %}
+          <span class="nb-tag b">글 있음</span>
+        {% else %}
+          <span class="nb-tag w">초안</span>
+        {% endif %}
+        <div class="nb-dd">
+          <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="toggleDd(this)" style="padding:6px 10px;">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <div class="nb-dd-menu">
+            <div class="nb-dd-item" onclick="viewFoodPost('{{ fp.id }}')"><i class="bi bi-eye"></i> 내용 보기</div>
+            {% if fp.place_link %}
+            <a class="nb-dd-item" href="{{ fp.place_link }}" target="_blank">
+              <i class="bi bi-map"></i> 네이버 지도↗
+            </a>
+            {% endif %}
+            <div class="nb-dd-sep"></div>
+            <div class="nb-dd-item danger" onclick="deleteFoodPost('{{ fp.id }}')"><i class="bi bi-trash"></i> 삭제</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="nb-card">
+  <div class="empty-state">
+    <div class="ico"><i class="bi bi-shop"></i></div>
+    <div class="msg">맛집 탐방 기록이 없습니다</div>
+    <div class="sub">맛집 탭에서 방문 기록을 작성해보세요</div>
+    <a href="/" class="nb-btn nb-btn-warn"><i class="bi bi-shop"></i> 맛집 탭 열기</a>
+  </div>
+</div>
+{% endif %}
+</div>
+
+<!-- ══ 맛집 상세보기 모달 ═══════════════════════════════════════ -->
+<div id="foodModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;padding:20px;overflow-y:auto;">
+  <div style="max-width:680px;margin:40px auto;background:var(--surface);border-radius:16px;overflow:hidden;">
+    <div style="background:#fffbeb;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:700;font-size:15px;"><i class="bi bi-shop" style="color:#f59e0b;"></i> <span id="modalPlaceName">-</span></div>
+      <button onclick="document.getElementById('foodModal').style.display='none'"
+        style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-s);">×</button>
+    </div>
+    <div style="padding:20px;" id="modalBody">
+      <!-- JS로 채워짐 -->
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── 서브탭 ──────────────────────────────────────────────── */
+.hist-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; border-bottom: 3px solid transparent;
+  padding: 10px 20px; font-size: 13.5px; font-weight: 500;
+  cursor: pointer; color: var(--text-xs); transition: all .15s;
+}
+.hist-tab:hover  { color: var(--text); }
+.hist-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+#tab-food.active { color: #d97706; border-bottom-color: #f59e0b; }
+.hist-tab-cnt {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface2); color: var(--text-s);
+  font-size: 11px; font-weight: 700; border-radius: 20px;
+  min-width: 20px; height: 20px; padding: 0 6px;
+}
+.hist-tab-cnt.food { background: #fef3c7; color: #92400e; }
+/* 필터 활성 */
+.active-filter { border-color: var(--primary) !important; color: var(--primary) !important; }
+</style>
 
 {% endblock %}
 {% block scripts %}
 <script>
-// 통계 로드
-fetch('/api/stats').then(r=>r.json()).then(data=>{
-  document.getElementById('statsBar').innerHTML = `
-    <span class="stat-chip" style="background:var(--bg);color:var(--text-s);">전체 ${data.total}개</span>
-    <span class="stat-chip" style="background:#fffbeb;color:#d97706;">초안 ${data.draft}</span>
-    <span class="stat-chip" style="background:var(--primary-s);color:var(--primary);">포스팅 ${data.posted}</span>`;
-});
+/* ── 탭 전환 ─────────────────────────────────────────────── */
+let currentTab    = 'blog';
+let currentFilter = 'all';
 
-let currentStatus = 'all';
+function switchHistTab(tab) {
+  currentTab = tab;
+  document.getElementById('pane-blog').style.display = tab === 'blog' ? '' : 'none';
+  document.getElementById('pane-food').style.display = tab === 'food' ? '' : 'none';
+  document.getElementById('tab-blog').classList.toggle('active', tab === 'blog');
+  document.getElementById('tab-food').classList.toggle('active', tab === 'food');
+  filterCards();
+}
 
-function toggleDd(btn){
+/* ── 필터 ────────────────────────────────────────────────── */
+function setFilter(status, btn) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter'));
+  btn.classList.add('active-filter');
+  filterCards();
+}
+
+function filterCards() {
+  const q        = (document.getElementById('searchInput').value || '').toLowerCase();
+  const listId   = currentTab === 'blog' ? 'blogList' : 'foodList';
+  const listEl   = document.getElementById(listId);
+  if (!listEl) return;
+  let visible = 0;
+  listEl.querySelectorAll('.post-card').forEach(card => {
+    const title  = (card.dataset.title || '').toLowerCase();
+    const status = card.dataset.status || '';
+    const ok = (currentFilter === 'all' || status === currentFilter)
+            && (!q || title.includes(q));
+    card.style.display = ok ? '' : 'none';
+    if (ok) visible++;
+  });
+}
+
+/* ── 드롭다운 ────────────────────────────────────────────── */
+function toggleDd(btn) {
   const menu = btn.nextElementSibling;
-  document.querySelectorAll('.nb-dd-menu.open').forEach(m=>{ if(m!==menu) m.classList.remove('open'); });
+  document.querySelectorAll('.nb-dd-menu.open').forEach(m => { if (m !== menu) m.classList.remove('open'); });
   menu.classList.toggle('open');
 }
-document.addEventListener('click', e=>{
-  if(!e.target.closest('.nb-dd')) document.querySelectorAll('.nb-dd-menu.open').forEach(m=>m.classList.remove('open'));
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nb-dd')) document.querySelectorAll('.nb-dd-menu.open').forEach(m => m.classList.remove('open'));
 });
 
-function filterByStatus(status, btn){
-  currentStatus = status;
-  document.querySelectorAll('[data-status]').forEach(b=>{
-    if(b.tagName==='BUTTON') b.style.borderColor = '';
-  });
-  filterPosts();
-}
-
-function filterPosts(){
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  document.querySelectorAll('.post-card').forEach(card=>{
-    const title  = (card.dataset.title||'').toLowerCase();
-    const status = card.dataset.status;
-    const ok = (currentStatus==='all'||status===currentStatus) && (!q||title.includes(q));
-    card.style.display = ok ? '' : 'none';
-  });
-}
-
-async function deletePost(id){
-  if(!confirm('이 글을 삭제하시겠습니까?')) return;
-  await fetch(`/history/${id}/delete`,{method:'POST'});
+/* ── 블로그 삭제 ─────────────────────────────────────────── */
+async function deleteBlog(id) {
+  if (!confirm('이 블로그 글을 삭제하시겠습니까?')) return;
+  await fetch(`/history/${id}/delete`, { method: 'POST' });
   location.reload();
 }
+
+/* ── 맛집 삭제 ───────────────────────────────────────────── */
+async function deleteFoodPost(id) {
+  if (!confirm('이 맛집 기록을 삭제하시겠습니까?')) return;
+  await fetch(`/history/food/${id}/delete`, { method: 'POST' });
+  location.reload();
+}
+
+/* ── 맛집 상세보기 ───────────────────────────────────────── */
+async function viewFoodPost(id) {
+  const res  = await fetch(`/api/food-posts/${id}`);
+  const fp   = await res.json();
+  if (!fp || fp.error) { showToast('불러오기 실패', 'error'); return; }
+
+  document.getElementById('modalPlaceName').textContent = fp.place_name || '(장소 없음)';
+
+  const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+  const photos = (() => {
+    try { return JSON.parse(fp.photos || '[]'); } catch { return []; }
+  })();
+  const tags = (() => {
+    try { return JSON.parse(fp.tags || '[]'); } catch { return []; }
+  })();
+
+  document.getElementById('modalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px;">
+      <div><span style="color:var(--text-xs);">주소</span><br>${fp.place_road || fp.place_addr || '-'}</div>
+      <div><span style="color:var(--text-xs);">방문일</span><br>${fp.visit_date || '-'}</div>
+      <div><span style="color:var(--text-xs);">가격대</span><br>${fp.price_range || '-'}</div>
+      <div><span style="color:var(--text-xs);">동반인원</span><br>${fp.party_size || '-'}명</div>
+      <div><span style="color:var(--text-xs);">맛</span><br><span style="color:#f59e0b;">${stars(fp.rating_taste||0)}</span> ${fp.rating_taste}/5</div>
+      <div><span style="color:var(--text-xs);">분위기</span><br><span style="color:#f59e0b;">${stars(fp.rating_mood||0)}</span> ${fp.rating_mood}/5</div>
+    </div>
+    ${fp.memo ? `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px;"><b>메모</b><br>${fp.memo}</div>` : ''}
+    ${fp.title ? `<div style="font-weight:700;font-size:15px;margin-bottom:8px;">${fp.title}</div>` : ''}
+    ${fp.content ? `
+      <div style="font-size:13px;line-height:1.9;white-space:pre-wrap;background:var(--bg);border-radius:8px;padding:12px 14px;max-height:260px;overflow-y:auto;margin-bottom:14px;">${fp.content}</div>
+      <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="copyFoodContent('${id}')">
+        <i class="bi bi-clipboard"></i> 본문 복사
+      </button>
+    ` : ''}
+    ${tags.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">${tags.map(t=>`<span class="nb-tag g">#${t}</span>`).join('')}</div>` : ''}
+    ${photos.length ? `
+      <div style="margin-top:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-s);margin-bottom:8px;">첨부 사진 (${photos.length}장)</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+          ${photos.slice(0,8).map(p => p.url
+            ? `<a href="${p.url}" target="_blank"><img src="${p.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;" loading="lazy"></a>`
+            : '').join('')}
+        </div>
+      </div>` : ''}
+  `;
+  document.getElementById('foodModal').style.display = '';
+
+  // 본문 복사 함수 (클로저)
+  window._foodContent = fp.content || '';
+}
+
+async function copyFoodContent(id) {
+  if (window._foodContent) {
+    await navigator.clipboard.writeText(window._foodContent);
+    showToast('본문 복사됨!');
+  }
+}
+
+/* ── 통계 로드 ───────────────────────────────────────────── */
+fetch('/api/stats').then(r => r.json()).then(data => {
+  const foodTotal = {{ food_posts|length }};
+  document.getElementById('statsBar').innerHTML = `
+    <span class="stat-chip" style="background:var(--bg);color:var(--text-s);">블로그 ${data.total}개</span>
+    <span class="stat-chip" style="background:#fffbeb;color:#d97706;">초안 ${data.draft}</span>
+    <span class="stat-chip" style="background:var(--primary-s);color:var(--primary);">포스팅 ${data.posted}</span>
+    <span class="stat-chip" style="background:#fffbeb;color:#92400e;"><i class="bi bi-shop"></i> 맛집 ${foodTotal}개</span>`;
+});
+
+/* ── 모달 바깥 클릭 닫기 ─────────────────────────────────── */
+document.getElementById('foodModal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
 </script>
 {% endblock %}

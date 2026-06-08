@@ -487,3 +487,164 @@ def gdrive_callback():
 def gdrive_status():
     from services.photo_storage import is_gdrive_connected
     return jsonify({"connected": is_gdrive_connected()})
+
+# ══════════════════════════════════════════════════════════════
+#  API 키 연결 테스트
+# ══════════════════════════════════════════════════════════════
+
+@api_bp.route("/test/anthropic", methods=["POST"])
+def test_anthropic():
+    """Anthropic API 키 유효성 검사"""
+    data   = request.json or {}
+    api_key = data.get("key") or os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"ok": False, "error": "API 키가 비어있습니다"})
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        msg = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=10,
+            messages=[{"role": "user", "content": "hi"}]
+        )
+        model = msg.model
+        return jsonify({"ok": True, "message": f"연결 성공 — 모델: {model}"})
+    except Exception as e:
+        err = str(e)
+        hint = ""
+        if "401" in err or "authentication" in err.lower():
+            hint = " (키가 잘못되었거나 만료됨)"
+        elif "403" in err:
+            hint = " (권한 없음 — 플랜 확인 필요)"
+        return jsonify({"ok": False, "error": f"연결 실패{hint}: {err[:120]}"})
+
+
+@api_bp.route("/test/openai", methods=["POST"])
+def test_openai():
+    """OpenAI API 키 유효성 검사"""
+    data    = request.json or {}
+    api_key = data.get("key") or os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        return jsonify({"ok": False, "error": "API 키가 비어있습니다"})
+    try:
+        import openai
+        client  = openai.OpenAI(api_key=api_key)
+        models  = client.models.list()
+        names   = [m.id for m in models.data[:3]]
+        return jsonify({"ok": True, "message": f"연결 성공 — 사용 가능 모델 예시: {', '.join(names)}"})
+    except Exception as e:
+        err = str(e)
+        hint = " (키가 잘못됨)" if "401" in err or "Incorrect API key" in err else ""
+        return jsonify({"ok": False, "error": f"연결 실패{hint}: {err[:120]}"})
+
+
+@api_bp.route("/test/supabase", methods=["POST"])
+def test_supabase():
+    """Supabase URL + Key 유효성 검사"""
+    data = request.json or {}
+    url  = data.get("url")  or os.getenv("SUPABASE_URL", "")
+    key  = data.get("key")  or os.getenv("SUPABASE_KEY", "")
+    if not url or not key:
+        return jsonify({"ok": False, "error": "URL 또는 Key가 비어있습니다"})
+    try:
+        from supabase import create_client
+        sb   = create_client(url, key)
+        # app_settings 테이블 존재 여부 확인
+        rows = sb.table("app_settings").select("key").limit(1).execute()
+        cnt  = len(rows.data)
+        return jsonify({"ok": True, "message": f"연결 성공 — app_settings 테이블 확인됨 ({cnt}개 설정)"})
+    except Exception as e:
+        err = str(e)
+        if "relation" in err and "does not exist" in err:
+            return jsonify({"ok": False,
+                "error": "연결은 됐지만 app_settings 테이블이 없습니다. SQL Editor에서 supabase_app_settings.sql을 실행해주세요."})
+        hint = " (URL/Key 확인 필요)" if "invalid" in err.lower() or "jwt" in err.lower() else ""
+        return jsonify({"ok": False, "error": f"연결 실패{hint}: {err[:120]}"})
+
+
+@api_bp.route("/test/naver-search", methods=["POST"])
+def test_naver_search():
+    """네이버 지역검색 API 키 유효성 검사"""
+    data       = request.json or {}
+    client_id  = data.get("client_id")  or os.getenv("NAVER_CLIENT_ID", "")
+    client_sec = data.get("client_secret") or os.getenv("NAVER_CLIENT_SECRET", "")
+    if not client_id or not client_sec:
+        return jsonify({"ok": False, "error": "Client ID 또는 Secret이 비어있습니다"})
+    try:
+        import requests as req
+        resp = req.get(
+            "https://openapi.naver.com/v1/search/local.json",
+            params={"query": "스타벅스", "display": 3},
+            headers={"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_sec},
+            timeout=5
+        )
+        if resp.status_code == 200:
+            items = resp.json().get("items", [])
+            sample = items[0]["title"].replace("<b>","").replace("</b>","") if items else "없음"
+            return jsonify({"ok": True, "message": f"연결 성공 — {len(items)}개 결과, 첫 번째: {sample}"})
+        elif resp.status_code == 401:
+            return jsonify({"ok": False, "error": "인증 실패 — Client ID 또는 Secret이 잘못되었습니다"})
+        elif resp.status_code == 403:
+            return jsonify({"ok": False, "error": "권한 없음 — 앱에서 '지역' 검색 API를 활성화했는지 확인하세요"})
+        else:
+            return jsonify({"ok": False, "error": f"HTTP {resp.status_code}: {resp.text[:100]}"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"요청 오류: {str(e)[:120]}"})
+
+
+@api_bp.route("/test/instagram", methods=["POST"])
+def test_instagram():
+    """Instagram Graph API 토큰 유효성 검사 (서버 사이드)"""
+    data    = request.json or {}
+    user_id = data.get("user_id") or os.getenv("INSTAGRAM_USER_ID", "")
+    token   = data.get("token")   or os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
+    if not user_id or not token:
+        return jsonify({"ok": False, "error": "User ID 또는 Access Token이 비어있습니다"})
+    try:
+        import requests as req
+        resp = req.get(
+            f"https://graph.facebook.com/v19.0/{user_id}",
+            params={"fields": "username,name,account_type", "access_token": token},
+            timeout=6
+        )
+        d = resp.json()
+        if d.get("username"):
+            acct = d.get("account_type", "")
+            return jsonify({"ok": True,
+                "message": f"연결 성공 — @{d['username']} ({d.get('name','')}) | 계정유형: {acct}"})
+        else:
+            msg = d.get("error", {}).get("message", "알 수 없는 오류")
+            code = d.get("error", {}).get("code", "")
+            hint = ""
+            if code == 190:
+                hint = " → 토큰이 만료되었습니다. 재발급 필요"
+            elif code == 100:
+                hint = " → User ID가 잘못되었습니다"
+            return jsonify({"ok": False, "error": f"{msg}{hint}"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"요청 오류: {str(e)[:120]}"})
+
+
+@api_bp.route("/test/naver-blog", methods=["POST"])
+def test_naver_blog():
+    """네이버 블로그 계정 존재 여부 간이 확인"""
+    data     = request.json or {}
+    naver_id = data.get("naver_id") or os.getenv("NAVER_ID", "")
+    if not naver_id:
+        return jsonify({"ok": False, "error": "네이버 아이디가 비어있습니다"})
+    try:
+        import requests as req
+        # 블로그 존재 여부를 공개 API로 확인
+        resp = req.get(
+            f"https://blog.naver.com/{naver_id}",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=5,
+            allow_redirects=True
+        )
+        if resp.status_code == 200 and naver_id.lower() in resp.url.lower():
+            return jsonify({"ok": True, "message": f"블로그 확인됨 — https://blog.naver.com/{naver_id}"})
+        else:
+            return jsonify({"ok": False, "error": f"블로그를 찾을 수 없습니다 (ID: {naver_id})"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"확인 오류: {str(e)[:100]}"})
+

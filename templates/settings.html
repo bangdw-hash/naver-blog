@@ -55,6 +55,12 @@
           <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="runApiTest('/api/test/anthropic',{key:document.getElementById('anthropic_key').value},'anthropicStatus')">
+          <i class="bi bi-wifi"></i> 연결 테스트
+        </button>
+        <div id="anthropicStatus" class="api-test-result" style="display:none;"></div>
+      </div>
     </div>
   </div>
 
@@ -73,6 +79,12 @@
           <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="runApiTest('/api/test/openai',{key:document.getElementById('openai_key').value},'openaiStatus')">
+          <i class="bi bi-wifi"></i> 연결 테스트
+        </button>
+        <div id="openaiStatus" class="api-test-result" style="display:none;"></div>
+      </div>
     </div>
   </div>
 
@@ -90,7 +102,7 @@
           나머지 API 키는 여기서 저장하면 Supabase를 통해 자동 로드됩니다.
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="set-field" style="margin-bottom:0;">
           <label class="set-label">Supabase URL</label>
           <div class="set-input-wrap">
@@ -106,6 +118,12 @@
             <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
           </div>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="runApiTest('/api/test/supabase',{url:document.getElementById('supabase_url').value,key:document.getElementById('supabase_key').value},'supabaseStatus')">
+          <i class="bi bi-wifi"></i> 연결 테스트
+        </button>
+        <div id="supabaseStatus" class="api-test-result" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -140,7 +158,7 @@
           <button class="set-eye" onclick="togglePw(this)"><i class="bi bi-eye"></i></button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
         <div class="set-field" style="margin-bottom:0;">
           <label class="set-label">카테고리 이름</label>
           <div class="set-input-wrap">
@@ -156,6 +174,12 @@
           </div>
           <span class="set-link" style="cursor:default;">URL의 categoryNo= 값</span>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="runApiTest('/api/test/naver-blog',{naver_id:document.getElementById('naver_id').value},'naverBlogStatus')">
+          <i class="bi bi-wifi"></i> 블로그 확인
+        </button>
+        <div id="naverBlogStatus" class="api-test-result" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -260,11 +284,11 @@
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:16px;align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px;margin-top:16px;">
         <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="testInstagramApi()">
           <i class="bi bi-wifi"></i> 연결 테스트
         </button>
-        <div id="instaApiStatus" style="font-size:12px;color:var(--text-xs);"></div>
+        <div id="instaApiStatus" class="api-test-result" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -466,6 +490,18 @@
 .set-eye:hover { color:var(--text); }
 .set-link   { font-size:11.5px; color:var(--accent); margin-top:4px; display:inline-block; }
 .set-tip    { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:9px 12px; font-size:12px; color:#1e40af; margin-bottom:14px; display:flex; align-items:flex-start; gap:7px; }
+/* ── API 테스트 결과 ─────────────────────────────────────── */
+.api-test-result {
+  font-size: 12.5px; padding: 6px 12px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 500; border: 1.5px solid transparent;
+  transition: all .2s; max-width: 360px;
+}
+.api-test-result.testing { background:#f1f5f9; color:#64748b; border-color:#cbd5e1; }
+.api-test-result.ok      { background:#f0fdf4; color:#166534; border-color:#86efac; }
+.api-test-result.fail    { background:#fef2f2; color:#991b1b; border-color:#fca5a5; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display:inline-block; animation: spin .8s linear infinite; }
 @media(max-width:680px) {
   .set-grid { grid-template-columns:1fr !important; }
   .set-grid>[style*="grid-column:span 2"] { grid-column:span 1 !important; }
@@ -513,46 +549,41 @@ function copyMobileUrl() {
   navigator.clipboard.writeText(url).then(() => showToast('URL 복사됨!'));
 }
 
-/* ── 네이버 API 테스트 ──────────────────────────────────────── */
-async function testNaverApi() {
-  const el = document.getElementById('naverApiStatus');
-  el.style.display = ''; el.className = 'logic-pill';
-  el.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 테스트 중...';
+/* ── 공통 테스트 헬퍼 ────────────────────────────────────────── */
+async function runApiTest(endpoint, payload, statusElId) {
+  const el = document.getElementById(statusElId);
+  if (!el) return;
+  el.style.display = '';
+  el.className = 'api-test-result testing';
+  el.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> 테스트 중...';
   try {
-    const res  = await fetch('/api/search-place', {
+    const res  = await fetch(endpoint, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({query:'스타벅스'})
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
-    const ok   = data.items && data.items.length && !data.items[0].error;
-    el.className = ok ? 'logic-pill ok' : 'logic-pill warn';
-    el.innerHTML = ok
-      ? `<i class="bi bi-check-circle-fill"></i> 연결 성공 (${data.items.length}개)`
-      : `<i class="bi bi-exclamation-circle"></i> ${data.items?.[0]?.error || '결과 없음'}`;
+    el.className = 'api-test-result ' + (data.ok ? 'ok' : 'fail');
+    el.innerHTML = data.ok
+      ? `<i class="bi bi-check-circle-fill"></i> ${data.message}`
+      : `<i class="bi bi-x-circle-fill"></i> ${data.error}`;
   } catch(e) {
-    el.className = 'logic-pill warn';
-    el.innerHTML = `<i class="bi bi-x-circle"></i> 오류: ${e.message}`;
+    el.className = 'api-test-result fail';
+    el.innerHTML = `<i class="bi bi-x-circle-fill"></i> 네트워크 오류: ${e.message}`;
   }
 }
 
-/* ── 인스타그램 API 테스트 ──────────────────────────────────── */
-async function testInstagramApi() {
-  const userId = document.getElementById('instagram_user_id').value.trim();
-  const token  = document.getElementById('instagram_access_token').value.trim();
-  const el     = document.getElementById('instaApiStatus');
-  if (!userId || !token) { el.textContent = '⚠ User ID와 Access Token을 먼저 입력하세요.'; return; }
-  el.textContent = '테스트 중...';
-  try {
-    const res  = await fetch(`https://graph.facebook.com/v19.0/${userId}?fields=username,name&access_token=${token}`);
-    const data = await res.json();
-    if (data.username) {
-      el.innerHTML = `<span style="color:var(--primary)">✓ 연결됨: @${data.username}</span>`;
-    } else {
-      el.innerHTML = `<span style="color:var(--danger)">✗ ${data.error?.message || '확인 실패'}</span>`;
-    }
-  } catch(e) {
-    el.innerHTML = `<span style="color:var(--danger)">✗ 네트워크 오류</span>`;
-  }
+function testNaverApi() {
+  runApiTest('/api/test/naver-search', {
+    client_id:     document.getElementById('naver_client_id').value,
+    client_secret: document.getElementById('naver_client_secret').value
+  }, 'naverApiStatus');
+}
+
+function testInstagramApi() {
+  runApiTest('/api/test/instagram', {
+    user_id: document.getElementById('instagram_user_id').value,
+    token:   document.getElementById('instagram_access_token').value
+  }, 'instaApiStatus');
 }
 
 /* ── Supabase 저장 상태 확인 ────────────────────────────────── */
