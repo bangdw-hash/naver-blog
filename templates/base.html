@@ -29,6 +29,9 @@
   <a class="nav-link {% if '/settings' in request.path %}active{% endif %}" href="/settings">
     <i class="bi bi-gear"></i><span class="nav-label">설정</span>
   </a>
+  <a class="nav-link {% if '/remote-control' in request.path %}active{% endif %}" href="/remote-control" title="모바일 QR 접속">
+    <i class="bi bi-qr-code-scan"></i><span class="nav-label">원격접속</span>
+  </a>
 </nav>
 
 <!-- 메인 -->

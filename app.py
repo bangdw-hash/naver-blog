@@ -61,10 +61,12 @@ os.makedirs("./data", exist_ok=True)
 from routes.main    import main_bp
 from routes.api     import api_bp
 from routes.history import history_bp
+from routes.remote  import remote_bp
 
 app.register_blueprint(main_bp)
 app.register_blueprint(api_bp,     url_prefix="/api")
 app.register_blueprint(history_bp, url_prefix="/history")
+app.register_blueprint(remote_bp)
 
 # ── 맛집 DB 초기화 ────────────────────────────────────────
 try:
