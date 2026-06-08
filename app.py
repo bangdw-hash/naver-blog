@@ -29,6 +29,18 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.getenv("SECRET_KEY", "naver-blog-secret-2025")
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# ── Supabase → os.environ 설정 주입 (Railway 배포 포함) ───────
+try:
+    from services.settings_service import inject_to_env
+    n = inject_to_env()
+    if n:
+        print(f"[settings] Supabase에서 {n}개 설정 로드됨")
+    # secret_key도 Supabase에 저장된 값으로 갱신
+    if os.getenv("SECRET_KEY"):
+        app.secret_key = os.getenv("SECRET_KEY")
+except Exception as _e:
+    print(f"[settings] Supabase 설정 로드 skip: {_e}")
+
 # ── 모든 응답에 권한 허용 헤더 추가 ──────────────────────────
 @app.after_request
 def add_permission_headers(response):
