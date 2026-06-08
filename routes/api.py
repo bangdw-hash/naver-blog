@@ -648,3 +648,51 @@ def test_naver_blog():
     except Exception as e:
         return jsonify({"ok": False, "error": f"확인 오류: {str(e)[:100]}"})
 
+
+# ── ngrok 터널 시작 ───────────────────────────────────────────
+@api_bp.route("/start-tunnel", methods=["POST"])
+def start_tunnel_api():
+    """
+    ngrok 터널을 즉시 시작 (앱 재시작 없이).
+    요청 body에 token을 포함하면 그 토큰 사용, 없으면 환경변수 사용.
+    """
+    data  = request.json or {}
+    token = data.get("token", "").strip()
+
+    # 요청에 토큰이 있으면 env에 즉시 반영
+    if token:
+        os.environ["NGROK_AUTH_TOKEN"] = token
+        # Supabase에도 저장
+        try:
+            from services.settings_service import save_all_settings
+            save_all_settings({"NGROK_AUTH_TOKEN": token})
+        except Exception:
+            pass
+
+    port = int(os.getenv("PORT", 5000))
+    try:
+        from services.tunnel_service import start_tunnel, get_public_url, stop_tunnel
+
+        # 이미 실행 중이면 기존 URL 반환
+        existing = get_public_url()
+        if existing:
+            return jsonify({"ok": True, "url": existing, "message": "터널 이미 실행 중"})
+
+        # 새로 시작
+        url = start_tunnel(port)
+        if url:
+            return jsonify({"ok": True, "url": url, "message": "터널 시작 완료"})
+        else:
+            return jsonify({"ok": False, "error": "터널 시작 실패 — 토큰을 확인하거나 ngrok 설치 여부 확인"})
+
+    except Exception as e:
+        err = str(e)
+        hint = ""
+        if "authtoken" in err.lower() or "ERR_NGROK_108" in err:
+            hint = " (토큰 오류 — ngrok 대시보드에서 재발급 후 저장)"
+        elif "ERR_NGROK_302" in err:
+            hint = " (이미 다른 세션에서 실행 중 — ngrok 대시보드에서 세션 종료 후 재시도)"
+        elif "ModuleNotFoundError" in err or "pyngrok" in err:
+            hint = " (pyngrok 미설치 — pip install pyngrok 실행 필요)"
+        return jsonify({"ok": False, "error": f"{err[:120]}{hint}"})
+
