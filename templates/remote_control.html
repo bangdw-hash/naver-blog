@@ -63,8 +63,30 @@
             <i class="bi bi-copy"></i>
           </button>
         </div>
-        <div style="font-size:11.5px;color:var(--text-xs);margin-top:8px;">
-          <i class="bi bi-info-circle"></i> PC와 스마트폰이 <strong>같은 WiFi</strong>에 있을 때만 접속됩니다
+        <!-- 단축 URL -->
+        <div id="wifiShortWrap" style="display:none;margin-top:8px;">
+          <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:9px 14px;display:flex;align-items:center;gap:10px;">
+            <i class="bi bi-scissors" style="color:#3b82f6;font-size:16px;flex-shrink:0;"></i>
+            <code id="wifiShortUrl" style="flex:1;font-size:14px;font-weight:700;color:#1d4ed8;word-break:break-all;text-align:left;"></code>
+            <button onclick="copyUrl('wifiShortUrl')" class="nb-btn nb-btn-outline nb-btn-sm" style="flex-shrink:0;padding:5px 10px;">
+              <i class="bi bi-copy"></i>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-xs);margin-top:4px;"><i class="bi bi-check-circle" style="color:#3b82f6;"></i> 광고 없이 바로 연결 · TinyURL</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <div style="font-size:11.5px;color:var(--text-xs);">
+            <i class="bi bi-info-circle"></i> <strong>같은 WiFi</strong>에서만 접속됩니다
+          </div>
+          <button id="wifiShortenBtn" onclick="shortenUrl('urlDisplay','wifiShortUrl','wifiShortWrap','wifiShortenBtn','wifiQrImg')"
+            class="nb-btn nb-btn-outline nb-btn-sm" style="margin-left:auto;font-size:11px;padding:4px 10px;">
+            <i class="bi bi-scissors"></i> URL 줄이기
+          </button>
+        </div>
+        <!-- 단축 후 QR 갱신 영역 -->
+        <div id="wifiQrWrap" style="display:none;margin-top:12px;text-align:center;">
+          <div style="font-size:11px;color:var(--text-xs);margin-bottom:6px;">📱 단축 URL QR (스캔하면 바로 접속)</div>
+          <img id="wifiQrImg" src="" alt="단축 QR" style="width:180px;height:180px;border-radius:12px;">
         </div>
       </div>
     </div>
@@ -134,8 +156,30 @@
             <i class="bi bi-copy"></i>
           </button>
         </div>
-        <div style="font-size:11.5px;color:var(--text-xs);margin-top:8px;">
-          <i class="bi bi-check-circle" style="color:#16a34a;"></i> LTE/5G 환경에서도 접속됩니다 (앱 실행 중일 때만 유효)
+        <!-- 단축 URL -->
+        <div id="ngrokShortWrap" style="display:none;margin-top:8px;">
+          <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:9px 14px;display:flex;align-items:center;gap:10px;">
+            <i class="bi bi-scissors" style="color:#3b82f6;font-size:16px;flex-shrink:0;"></i>
+            <code id="ngrokShortUrl" style="flex:1;font-size:14px;font-weight:700;color:#1d4ed8;word-break:break-all;text-align:left;"></code>
+            <button onclick="copyUrl('ngrokShortUrl')" class="nb-btn nb-btn-outline nb-btn-sm" style="flex-shrink:0;padding:5px 10px;">
+              <i class="bi bi-copy"></i>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-xs);margin-top:4px;"><i class="bi bi-check-circle" style="color:#3b82f6;"></i> 광고 없이 바로 연결 · TinyURL</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <div style="font-size:11.5px;color:var(--text-xs);">
+            <i class="bi bi-check-circle" style="color:#16a34a;"></i> LTE/5G 환경에서도 접속됩니다
+          </div>
+          <button id="ngrokShortenBtn" onclick="shortenUrl('ngrokUrlDisplay','ngrokShortUrl','ngrokShortWrap','ngrokShortenBtn','ngrokQrShortImg')"
+            class="nb-btn nb-btn-outline nb-btn-sm" style="margin-left:auto;font-size:11px;padding:4px 10px;">
+            <i class="bi bi-scissors"></i> URL 줄이기
+          </button>
+        </div>
+        <!-- 단축 후 QR -->
+        <div id="ngrokQrShortWrap" style="display:none;margin-top:12px;text-align:center;">
+          <div style="font-size:11px;color:var(--text-xs);margin-bottom:6px;">📱 단축 URL QR (스캔하면 바로 접속)</div>
+          <img id="ngrokQrShortImg" src="" alt="단축 QR" style="width:180px;height:180px;border-radius:12px;">
         </div>
       </div>
     </div>
@@ -360,6 +404,60 @@ async function checkNgrokStatus() {
 function copyUrl(elId) {
   const txt = document.getElementById(elId)?.textContent || '';
   navigator.clipboard.writeText(txt).then(() => showToast('URL 복사됨!'));
+}
+
+/* ── URL 단축 ─────────────────────────────────────────────── */
+async function shortenUrl(srcElId, shortElId, wrapElId, btnElId, qrImgElId) {
+  const longUrl = document.getElementById(srcElId)?.textContent?.trim() || '';
+  if (!longUrl || longUrl.includes('localhost') || longUrl.includes('127.0.0.1')) {
+    showToast('로컬 URL은 단축할 수 없습니다. ngrok 또는 Railway URL을 사용하세요.', 'error');
+    return;
+  }
+  const btn = document.getElementById(btnElId);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> 단축 중...'; }
+
+  try {
+    const res  = await fetch('/api/shorten-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: longUrl })
+    });
+    const data = await res.json();
+
+    if (data.ok && data.short_url) {
+      // 단축 URL 표시
+      const shortEl = document.getElementById(shortElId);
+      const wrap    = document.getElementById(wrapElId);
+      if (shortEl) shortEl.textContent = data.short_url;
+      if (wrap)    wrap.style.display  = '';
+
+      // QR 업데이트 (단축 URL로)
+      const qrEl   = document.getElementById(qrImgElId);
+      const qrWrap = qrEl?.closest('[id$="Wrap"]') || document.getElementById(qrImgElId + 'Wrap');
+      if (qrEl) {
+        qrEl.src = `/api/qr-image?url=${encodeURIComponent(data.short_url)}`;
+        // QR 이미지가 ngrokQrImg면 바로 업데이트, 아니면 wrap 보여주기
+        if (qrImgElId === 'wifiQrImg') {
+          document.getElementById('wifiQrWrap').style.display = '';
+        } else if (qrImgElId === 'ngrokQrShortImg') {
+          document.getElementById('ngrokQrShortWrap').style.display = '';
+        }
+      }
+      // 기존 큰 QR도 단축 URL로 교체
+      if (qrImgElId === 'ngrokQrShortImg') {
+        const mainQr = document.getElementById('ngrokQrImg');
+        if (mainQr) mainQr.src = `/api/qr-image?url=${encodeURIComponent(data.short_url)}`;
+      }
+
+      showToast(`✂️ URL 단축 완료! (${data.service})`);
+    } else {
+      showToast('단축 실패: ' + (data.error || ''), 'error');
+    }
+  } catch(e) {
+    showToast('오류: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-scissors"></i> URL 줄이기'; }
+  }
 }
 
 /* ── 아코디언 ─────────────────────────────────────────────── */

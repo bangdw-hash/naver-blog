@@ -696,3 +696,49 @@ def start_tunnel_api():
             hint = " (pyngrok 미설치 — pip install pyngrok 실행 필요)"
         return jsonify({"ok": False, "error": f"{err[:120]}{hint}"})
 
+
+# ── URL 단축 ──────────────────────────────────────────────────
+@api_bp.route("/shorten-url", methods=["POST"])
+def shorten_url():
+    """
+    긴 URL → 단축 URL 변환.
+    TinyURL (광고 없음, 직접 리다이렉트) 1차 시도,
+    실패 시 is.gd (광고 없음, 직접 리다이렉트) 2차 시도.
+    """
+    import urllib.parse
+    data = request.json or {}
+    long_url = (data.get("url") or "").strip()
+
+    if not long_url:
+        return jsonify({"ok": False, "error": "URL이 비어있습니다"})
+    if not long_url.startswith(("http://", "https://")):
+        return jsonify({"ok": False, "error": "http:// 또는 https:// 로 시작하는 URL을 입력하세요"})
+
+    import requests as req
+
+    # ── 1차: TinyURL ──────────────────────────────────────────
+    try:
+        encoded = urllib.parse.quote(long_url, safe="")
+        resp = req.get(
+            f"https://tinyurl.com/api-create.php?url={encoded}",
+            timeout=6
+        )
+        if resp.status_code == 200 and resp.text.startswith("https://tinyurl.com"):
+            return jsonify({"ok": True, "short_url": resp.text.strip(), "service": "TinyURL"})
+    except Exception:
+        pass
+
+    # ── 2차: is.gd ────────────────────────────────────────────
+    try:
+        encoded = urllib.parse.quote(long_url, safe="")
+        resp = req.get(
+            f"https://is.gd/create.php?format=simple&url={encoded}",
+            timeout=6
+        )
+        if resp.status_code == 200 and "is.gd" in resp.text:
+            return jsonify({"ok": True, "short_url": resp.text.strip(), "service": "is.gd"})
+    except Exception:
+        pass
+
+    return jsonify({"ok": False, "error": "단축 서비스 연결 실패 — 인터넷 연결을 확인하세요"})
+

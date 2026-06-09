@@ -446,12 +446,27 @@
       <!-- 터널 현재 상태 -->
       <div id="tunnelStatusBox" style="display:none;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
         <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;"><i class="bi bi-check-circle-fill"></i> ngrok 터널 활성</div>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <!-- 원본 URL -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <code id="tunnelPublicUrl" style="font-size:13px;font-weight:700;color:#16a34a;word-break:break-all;flex:1;"></code>
           <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="copyTunnelUrl()" style="flex-shrink:0;padding:4px 10px;">
             <i class="bi bi-copy"></i>
           </button>
+          <button id="tunnelShortenBtn" onclick="shortenTunnelUrl()" class="nb-btn nb-btn-outline nb-btn-sm" style="flex-shrink:0;padding:4px 10px;white-space:nowrap;">
+            <i class="bi bi-scissors"></i> URL 줄이기
+          </button>
         </div>
+        <!-- 단축 URL -->
+        <div id="tunnelShortWrap" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-bottom:6px;display:none;">
+          <div style="font-size:11px;color:#1e40af;margin-bottom:4px;font-weight:600;"><i class="bi bi-scissors"></i> 단축 URL (광고 없이 바로 연결)</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <code id="tunnelShortUrl" style="flex:1;font-size:13px;font-weight:700;color:#1d4ed8;word-break:break-all;"></code>
+            <button class="nb-btn nb-btn-outline nb-btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('tunnelShortUrl').textContent).then(()=>showToast('복사됨!'))" style="flex-shrink:0;padding:4px 8px;">
+              <i class="bi bi-copy"></i>
+            </button>
+          </div>
+        </div>
+        <!-- QR -->
         <div style="margin-top:8px;">
           <img id="tunnelQrImg" src="" alt="QR" style="width:140px;height:140px;border-radius:10px;display:none;">
         </div>
@@ -738,6 +753,32 @@ function _showTunnelInactive(errMsg) {
 function copyTunnelUrl() {
   const url = document.getElementById('tunnelPublicUrl')?.textContent || '';
   navigator.clipboard.writeText(url).then(() => showToast('URL 복사됨!'));
+}
+
+async function shortenTunnelUrl() {
+  const longUrl = document.getElementById('tunnelPublicUrl')?.textContent?.trim() || '';
+  if (!longUrl) return;
+  const btn = document.getElementById('tunnelShortenBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>'; }
+  try {
+    const res  = await fetch('/api/shorten-url', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ url: longUrl })
+    });
+    const data = await res.json();
+    if (data.ok && data.short_url) {
+      const sw  = document.getElementById('tunnelShortWrap');
+      const su  = document.getElementById('tunnelShortUrl');
+      const qr  = document.getElementById('tunnelQrImg');
+      if (su) su.textContent = data.short_url;
+      if (sw) sw.style.display = '';
+      if (qr) { qr.src = `/api/qr-image?url=${encodeURIComponent(data.short_url)}`; qr.style.display = ''; }
+      showToast('✂️ URL 단축 완료! ' + data.short_url);
+    } else {
+      showToast('단축 실패: ' + (data.error || ''), 'error');
+    }
+  } catch(e) { showToast('오류: ' + e.message, 'error'); }
+  finally { if (btn) { btn.disabled=false; btn.innerHTML='<i class="bi bi-scissors"></i> URL 줄이기'; } }
 }
 
 /* ── 터널 시작 ──────────────────────────────────────────── */
